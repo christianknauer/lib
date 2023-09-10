@@ -2,7 +2,9 @@
 
 # file: logging
 
-source ./logging.conf.sh
+echo "$BASH_SOURCE"
+
+source logging.conf.sh
 
 # global variables
 
