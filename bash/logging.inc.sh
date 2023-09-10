@@ -141,8 +141,7 @@ Begin () {
 }
 
 DebugScope () {
-    local Module_Name="${_LOGGING_MODULE_NAME:=unknown}"
-    local Scope="${Module_Name,,}"
+    local Scope="$_LOGGING_MODULE_NAME"
     if [[ $LOGGING_LEVEL_SCOPE =~ "$Scope" ]]; then
 	return 0
     else 
