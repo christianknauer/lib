@@ -2,7 +2,7 @@
 
 # file: logging
 
-source logging.config
+source logging.conf.sh
 
 # global variables
 
