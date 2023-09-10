@@ -2,9 +2,8 @@
 
 # file: logging
 
-echo "$BASH_SOURCE"
-
-source logging.conf.sh
+_LOGGING_MODULE_DIR=$(dirname "$BASH_SOURCE")
+source "$_LOGGING_MODULE_DIR/logging.conf.sh"
 
 # global variables
 
@@ -108,12 +107,11 @@ _TextColor () {
 _FormatMsg () {
     local Text_Color="$(_TextColor $1)"
     local Time_Stamp=$(date +"%d.%m.%Y %T")
-    local Module_Name="${_LOGGING_MODULE_NAME:=unknown}"
     local Level=$(printf '%-5s' "$1")
     if [ "$LOGGING_STYLE_LOG" == "color" ]; then
-        echo "[$Text_Color$Level$Color_Off $Time_Stamp $BWhite$Module_Name$Color_Off] $2" 
+        echo "[$Text_Color$Level$Color_Off $Time_Stamp $BWhite$_LOGGING_MODULE_NAME$Color_Off] $2" 
     else 
-        echo "[$Level $Time_Stamp $Module_Name] $2" 
+        echo "[$Level $Time_Stamp $_LOGGING_MODULE_NAME] $2" 
     fi
 }
 
