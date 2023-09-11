@@ -1,13 +1,18 @@
 #!/bin/bash
 
-# file: logging
+# file: logging.inc.sh
+
+# module options
+LOGGING_STYLE="${LOGGING_STYLE:=color}"
+LOGGING_LEVEL="${LOGGING_LEVEL:=0}"
+LOGGING_MODULES="${LOGGING_MODULES:=}"
 
 _LOGGING_MODULE_DIR=$(dirname "$BASH_SOURCE")
-source "$_LOGGING_MODULE_DIR/logging.conf.sh"
+
+# source "$_LOGGING_MODULE_DIR/logging.conf.sh"
 
 # global variables
-
-export _LOGGING_MODULE_NAME="unknown"
+_LOGGING_MODULE_NAME=""
 
 # global constants
 
@@ -108,7 +113,7 @@ _FormatMsg () {
     local Text_Color="$(_TextColor $1)"
     local Time_Stamp=$(date +"%d.%m.%Y %T")
     local Level=$(printf '%-5s' "$1")
-    if [ "$LOGGING_STYLE_LOG" == "color" ]; then
+    if [ "$LOGGING_STYLE" == "color" ]; then
         echo "[$Text_Color$Level$Color_Off $Time_Stamp $BWhite$_LOGGING_MODULE_NAME$Color_Off] $2" 
     else 
         echo "[$Level $Time_Stamp $_LOGGING_MODULE_NAME] $2" 
@@ -117,16 +122,16 @@ _FormatMsg () {
 
 _Msg () {
     local MsgText=$(_FormatMsg "$1" "$2")
-    if $(DebugScope); then
+    if $(_DebuggingModule); then
         echo -e "$MsgText" 
     fi
 }
 
 _MsgCat () {
     local MsgText=$(_FormatMsg "$1" "$2")
-    if $(DebugScope); then
+    if $(_DebuggingModule); then
         echo -e -n "$MsgText" # ; cat "$4" 
-        if [ "$LOGGING_STYLE_LOG" == "color" ]; then
+        if [ "$LOGGING_STYLE" == "color" ]; then
             echo -e -n "$Blue" ; cat "$3" ; echo -e -n "$Color_Off"
         else 
             cat "$3" 
@@ -134,24 +139,25 @@ _MsgCat () {
     fi
 }
 
-# public functions
-
-Begin () {
-    export _LOGGING_MODULE_NAME=$1 ; return 1
-}
-
-DebugScope () {
+_DebuggingModule () {
     local Scope="$_LOGGING_MODULE_NAME"
-    if [[ $LOGGING_LEVEL_SCOPE =~ "$Scope" ]]; then
+    if [[ $LOGGING_MODULES =~ "$Scope" ]]; then
 	return 0
     else 
 	return 1
     fi
 }
 
-DebugLevel () {
-    if $(DebugScope); then
-        if (( $1 <= $LOGGING_LEVEL_DEBUG )); then
+
+# public functions
+
+LoggingModuleName () {
+    _LOGGING_MODULE_NAME=$1 ; return 1
+}
+
+DebuggingActive () {
+    if $(_DebuggingModule); then
+        if (( $1 <= $LOGGING_LEVEL )); then
 	    return 0
         else 
 	    return 1
@@ -162,19 +168,19 @@ DebugLevel () {
 }
 
 DebugMsg () {
-    if (( $1 <= $LOGGING_LEVEL_DEBUG )); then
-        _Msg DEBUG "[$1/$LOGGING_LEVEL_DEBUG] $2"
+    if (( $1 <= $LOGGING_LEVEL )); then
+        _Msg DEBUG "[$1/$LOGGING_LEVEL] $2"
     fi
 }
 
 DebugCat () {
-    if (( $1 <= $LOGGING_LEVEL_DEBUG )); then
-        _MsgCat DEBUG "[$1/$LOGGING_LEVEL_DEBUG] $2" "$3"
+    if (( $1 <= $LOGGING_LEVEL )); then
+        _MsgCat DEBUG "[$1/$LOGGING_LEVEL] $2" "$3"
     fi
 }
 
 DebugLs () {
-    if (( $1 <= $LOGGING_LEVEL_DEBUG )); then
+    if (( $1 <= $LOGGING_LEVEL )); then
         ls -laR "$3" > /tmp/DebugLsDircontent.txt
 	DebugCat "$1" "$2" /tmp/DebugLsDircontent.txt
         rm -f /tmp/DebugLsDircontent.txt
@@ -199,6 +205,14 @@ ErrorMsg () {
 
 ErrorCat () {
     _MsgCat ERROR "$1" "$2"
+}
+
+# display logging configuration
+DebugLoggingConfig () {
+    DebugMsg $1 "logging module configuration ($_LOGGING_MODULE_DIR):"
+    DebugMsg $1 "LOGGING_STYLE   = $LOGGING_STYLE"
+    DebugMsg $1 "LOGGING_LEVEL   = $LOGGING_LEVEL"
+    DebugMsg $1 "LOGGING_MODULES = $LOGGING_MODULES"
 }
 
 # EOF
