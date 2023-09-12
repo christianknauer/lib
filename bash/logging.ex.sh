@@ -8,18 +8,22 @@
 source lib.inc.sh
 [ -z "$LIB_DIRECTORY" ] && echo "logging.ex.sh: LIB_DIRECTORY not defined, terminating." && exit 1
 
-# load logging module
+#LOGGING_DEBUG_LEVEL=3
+#LOGGING_MODULES="logging.ex"
 
+# load logging module
 # use global namespace
 LOGGING_NAMESPACE="."
-LOGGING_DEBUG_LEVEL=11
-#LOGGING_MODULES="logging.ex"
 source ${LIB_DIRECTORY}/logging.inc.sh
 
-#DebugLoggingConfig 2
+ParseLoggingOptions ${@}
+DebugLoggingConfig 9
 
 #SetLoggingModuleName logging.ex
 
+TestFn () {
+	InfoMsg "inside info"
+}
 DebugMsg 2 "debug"
 DebugLs 2 "debugls" .
 DebugCat 2 "debugcat" lib.inc.sh
@@ -31,5 +35,6 @@ if $(DebuggingIsActive 2); then
 else
   InfoMsg "debugging is not active"
 fi
+TestFn
 
 # EOF

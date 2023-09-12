@@ -11,6 +11,7 @@ LOGGING_NAMESPACE="${LOGGING_NAMESPACE:=.Logging.}"
 LOGGING_STYLE="${LOGGING_STYLE:=color}"
 LOGGING_DEBUG_LEVEL="${LOGGING_DEBUG_LEVEL:=0}"
 LOGGING_MODULES="${LOGGING_MODULES:=ALL}"
+LOGGING_FUNCTION_NAME="${LOGGING_FUNCTION_NAME:=null}"
 
 #_LOGGING_MODULE_DIR=$(dirname "$BASH_SOURCE")
 
@@ -18,10 +19,11 @@ LOGGING_MODULES="${LOGGING_MODULES:=ALL}"
 
 # colors module (use default namespace "Colors.")
 source "$LIB_DIRECTORY/colors.inc.sh"
+# options module (use default namespace "Options.")
+source "$LIB_DIRECTORY/options.inc.sh"
 
 # global variables
 LOGGING_MODULE_NAME=$(basename "$0")
-LOGGING_FUNCTION_NAME="main"
 
 # global constants
 
@@ -38,12 +40,13 @@ __Logging_BWhite=$(Colors.GetColor BWhite)
 # private functions
 
 __Logging_Push(){ let __Logging_FunctionStackCtr++;eval "__Logging_FunctionStackItem$__Logging_FunctionStackCtr=\"$1\"";}
+
 __Logging_Pop(){ eval "echo -e \$__Logging_FunctionStackItem$__Logging_FunctionStackCtr;unset __Logging_FunctionStackItem$__Logging_FunctionStackCtr";let __Logging_FunctionStackCtr--;}
 #__Logging_Append(){ __Logging_Push "`__Logging_Pop`\n$1";}
 
 __Logging_EnterFunction () {
     __Logging_Push $LOGGING_FUNCTION_NAME
-    LOGGING_FUNCTION_NAME=$1
+    LOGGING_FUNCTION_NAME=${FUNCNAME[3]}
 }
 
 __Logging_LeaveFunction () {
@@ -70,10 +73,14 @@ __Logging_FormatMsg () {
     local Text_Color="$(__Logging_TextColor $1)"
     local Time_Stamp=$(date +"%d.%m.%Y %T")
     local Level=$(printf '%-5s' "$1")
+    local LoggingFnNameString=""
+    if [ ! "$LOGGING_FUNCTION_NAME" == "null" ]; then
+    	LoggingFnNameString=" ($LOGGING_FUNCTION_NAME)"
+    fi
     if [ "$LOGGING_STYLE" == "color" ]; then
-	    echo "[$Text_Color$Level$__Logging_ColorOff $Time_Stamp $__Logging_BWhite$LOGGING_MODULE_NAME ($LOGGING_FUNCTION_NAME)$__Logging_ColorOff] $2" 
+	    echo "[$Text_Color$Level$__Logging_ColorOff $Time_Stamp $__Logging_BWhite$LOGGING_MODULE_NAME$LoggingFnNameString$__Logging_ColorOff] $2" 
     else 
-        echo "[$Level $Time_Stamp $LOGGING_MODULE_NAME] $2" 
+        echo "[$Level $Time_Stamp $LOGGING_MODULE_NAME$LoggingFnNameString] $2" 
     fi
 }
 
@@ -135,78 +142,92 @@ _Logging.DebuggingIsActive () {
 
 eval "${LOGGING_NAMESPACE:1}DebugMsg() { _Logging.DebugMsg \"\$@\"; }"
 _Logging.DebugMsg () {
+    __Logging_EnterFunction
     if (( $1 <= $LOGGING_DEBUG_LEVEL )); then
         __Logging_Msg DEBUG "[$1/$LOGGING_DEBUG_LEVEL] $2"
     fi
+    __Logging_LeaveFunction
 }
 
 eval "${LOGGING_NAMESPACE:1}DebugCat() { _Logging.DebugCat \"\$@\"; }"
 _Logging.DebugCat () {
+    __Logging_EnterFunction
     if (( $1 <= $LOGGING_DEBUG_LEVEL )); then
         __Logging_MsgCat DEBUG "[$1/$LOGGING_DEBUG_LEVEL] $2" "$3" "$4"
     fi
+    __Logging_LeaveFunction
 }
 
 eval "${LOGGING_NAMESPACE:1}DebugLs() { _Logging.DebugLs \"\$@\"; }"
 _Logging.DebugLs () {
-    _Exit () { 
-	__Logging_EnterFunction ${FUNCNAME[1]}
-	DebugMsg 1 "Exiting ${FUNCNAME[1]}"
-	__Logging_LeaveFunction
-    }
+    __Logging_EnterFunction
     if (( $1 <= $LOGGING_DEBUG_LEVEL )); then
-	__Logging_EnterFunction ${FUNCNAME[0]}
 	local tmp_file=$(mktemp)
 	if ! [ -f $tmp_file ]; then
 	  _Logging.ErrorMsg "Cannot create temp file ($tmp_file)."
-	  __Logging_LeaveFunction
 	else
 	  _Logging.DebugMsg 9 "Using $tmp_file as temp file."
-	  __Logging_LeaveFunction
           ls -laR "$3" > "$tmp_file"
-	  DebugCat "$1" "$2" "$tmp_file" "$3"
+          __Logging_MsgCat DEBUG "[$1/$LOGGING_DEBUG_LEVEL] $2" "$tmp_file" "$3"
 	  rm -f -- "$tmp_file"
 	fi
     fi
+    __Logging_LeaveFunction
 }
 
 eval "${LOGGING_NAMESPACE:1}InfoMsg() { _Logging.InfoMsg \"\$@\"; }"
 _Logging.InfoMsg () {
+    __Logging_EnterFunction
     __Logging_Msg INFO "$1"
+    __Logging_LeaveFunction
 }
 
 eval "${LOGGING_NAMESPACE:1}InfoCat() { _Logging.InfoCat \"\$@\"; }"
 _Logging.InfoCat () {
+    __Logging_EnterFunction
     __Logging_MsgCat INFO "$1" "$2"
+    __Logging_LeaveFunction
 }
 
 eval "${LOGGING_NAMESPACE:1}WarnMsg() { _Logging.WarnMsg \"\$@\"; }"
 _Logging.WarnMsg () {
+    __Logging_EnterFunction
     __Logging_Msg WARN "$1"
+    __Logging_LeaveFunction
 }
 
 eval "${LOGGING_NAMESPACE:1}ErrorMsg() { _Logging.ErrorMsg \"\$@\"; }"
 _Logging.ErrorMsg () {
+    __Logging_EnterFunction
     __Logging_Msg ERROR "$1"
+    __Logging_LeaveFunction
 }
 
 eval "${LOGGING_NAMESPACE:1}ErrorCat() { _Logging.ErrorCat \"\$@\"; }"
 _Logging.ErrorCat () {
+    __Logging_EnterFunction
     __Logging_MsgCat ERROR "$1" "$2"
+    __Logging_LeaveFunction
+}
+
+eval "${LOGGING_NAMESPACE:1}ParseLoggingOptions() { _Logging.ParseLoggingOptions \"\$@\"; }"
+_Logging.ParseLoggingOptions () {
+    USAGE="[ -d LOGGING_DEBUG_LEVEL ]"
+    Options.ParseOptions "${USAGE}" ${@}
 }
 
 eval "${LOGGING_NAMESPACE:1}DebugLoggingConfig() { _Logging.DebugLoggingConfig \"\$@\"; }"
 _Logging.DebugLoggingConfig () {
-    __Logging_Push $LOGGING_FUNCTION_NAME
-    LOGGING_FUNCTION_NAME=${FUNCNAME[0]}
-    DebugMsg $1 "LOGGING_NAMESPACE   = $LOGGING_NAMESPACE"
-    DebugMsg $1 "LOGGING_MODULE_NAME = $LOGGING_MODULE_NAME"
-    DebugMsg $1 "LOGGING_STYLE       = $LOGGING_STYLE"
-    DebugMsg $1 "LOGGING_DEBUG_LEVEL = $LOGGING_DEBUG_LEVEL"
-    DebugMsg $1 "LOGGING_MODULES     = $LOGGING_MODULES"
-    LOGGING_FUNCTION_NAME="`__Logging_Pop`" 
+    local LogLvl="[$1/$LOGGING_DEBUG_LEVEL]"
+    __Logging_EnterFunction
+    if (( $1 <= $LOGGING_DEBUG_LEVEL )); then
+        __Logging_Msg DEBUG "$LogLvl LOGGING_NAMESPACE   = $LOGGING_NAMESPACE"
+        __Logging_Msg DEBUG "$LogLvl LOGGING_MODULE_NAME = $LOGGING_MODULE_NAME"
+        __Logging_Msg DEBUG "$LogLvl LOGGING_STYLE       = $LOGGING_STYLE"
+        __Logging_Msg DEBUG "$LogLvl LOGGING_DEBUG_LEVEL = $LOGGING_DEBUG_LEVEL"
+        __Logging_Msg DEBUG "$LogLvl LOGGING_MODULES     = $LOGGING_MODULES"
+    fi
+    __Logging_LeaveFunction
 }
-
-_Logging.DebugLoggingConfig 9
 
 # EOF
