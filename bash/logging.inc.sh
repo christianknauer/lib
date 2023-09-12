@@ -21,6 +21,7 @@ source "$LIB_DIRECTORY/colors.inc.sh"
 
 # global variables
 LOGGING_MODULE_NAME=$(basename "$0")
+LOGGING_FUNCTION_NAME="main"
 
 # global constants
 
@@ -35,6 +36,10 @@ __Logging_BRed=$(Colors.GetColor BRed)
 __Logging_BWhite=$(Colors.GetColor BWhite)
 
 # private functions
+
+__Logging_Push(){ let __Logging_FunctionStackCtr++;eval "__Logging_FunctionStackItem$__Logging_FunctionStackCtr=\"$1\"";}
+__Logging_Pop(){ eval "echo -e \$__Logging_FunctionStackItem$__Logging_FunctionStackCtr;unset __Logging_FunctionStackItem$__Logging_FunctionStackCtr";let __Logging_FunctionStackCtr--;}
+#__Logging_Append(){ __Logging_Push "`__Logging_Pop`\n$1";}
 
 __Logging_TextColor () {
     local Text_Color=$__Logging_ColorOff
@@ -57,7 +62,7 @@ __Logging_FormatMsg () {
     local Time_Stamp=$(date +"%d.%m.%Y %T")
     local Level=$(printf '%-5s' "$1")
     if [ "$LOGGING_STYLE" == "color" ]; then
-        echo "[$Text_Color$Level$__Logging_ColorOff $Time_Stamp $__Logging_BWhite$LOGGING_MODULE_NAME$__Logging_ColorOff] $2" 
+	    echo "[$Text_Color$Level$__Logging_ColorOff $Time_Stamp $__Logging_BWhite$LOGGING_MODULE_NAME ($LOGGING_FUNCTION_NAME)$__Logging_ColorOff] $2" 
     else 
         echo "[$Level $Time_Stamp $LOGGING_MODULE_NAME] $2" 
     fi
@@ -136,9 +141,22 @@ _Logging.DebugCat () {
 eval "${LOGGING_NAMESPACE:1}DebugLs() { _Logging.DebugLs \"\$@\"; }"
 _Logging.DebugLs () {
     if (( $1 <= $LOGGING_DEBUG_LEVEL )); then
-        ls -laR "$3" > /tmp/DebugLsDircontent.txt
-	DebugCat "$1" "$2" /tmp/DebugLsDircontent.txt "$3"
-        rm -f /tmp/DebugLsDircontent.txt
+        __Logging_Push $LOGGING_FUNCTION_NAME
+        LOGGING_FUNCTION_NAME=${FUNCNAME[0]}
+	local tmp_file=$(mktemp)
+	if ! [ -f $tmp_file ]; then
+	  _Logging.ErrorMsg "Cannot create temp file ($tmp_file)."
+          LOGGING_FUNCTION_NAME="`__Logging_Pop`" 
+	else
+	  _Logging.DebugMsg 9 "Using $tmp_file as temp file."
+          LOGGING_FUNCTION_NAME="`__Logging_Pop`" 
+          ls -laR "$3" > "$tmp_file"
+	  DebugCat "$1" "$2" "$tmp_file" "$3"
+	  rm -f -- "$tmp_file"
+	fi
+        #ls -laR "$3" > /tmp/DebugLsDircontent.txt
+	#DebugCat "$1" "$2" /tmp/DebugLsDircontent.txt "$3"
+        #rm -f /tmp/DebugLsDircontent.txt
     fi
 }
 
@@ -169,13 +187,16 @@ _Logging.ErrorCat () {
 
 eval "${LOGGING_NAMESPACE:1}DebugLoggingConfig() { _Logging.DebugLoggingConfig \"\$@\"; }"
 _Logging.DebugLoggingConfig () {
-    DebugMsg $1 "logging module -------------------------------"
-    DebugMsg $1 "  LOGGING_NAMESPACE   = $LOGGING_NAMESPACE"
-    DebugMsg $1 "  LOGGING_MODULE_NAME = $LOGGING_MODULE_NAME"
-    DebugMsg $1 "  LOGGING_STYLE       = $LOGGING_STYLE"
-    DebugMsg $1 "  LOGGING_DEBUG_LEVEL = $LOGGING_DEBUG_LEVEL"
-    DebugMsg $1 "  LOGGING_MODULES     = $LOGGING_MODULES"
-    DebugMsg $1 "----------------------------------------------"
+    __Logging_Push $LOGGING_FUNCTION_NAME
+    LOGGING_FUNCTION_NAME=${FUNCNAME[0]}
+    DebugMsg $1 "LOGGING_NAMESPACE   = $LOGGING_NAMESPACE"
+    DebugMsg $1 "LOGGING_MODULE_NAME = $LOGGING_MODULE_NAME"
+    DebugMsg $1 "LOGGING_STYLE       = $LOGGING_STYLE"
+    DebugMsg $1 "LOGGING_DEBUG_LEVEL = $LOGGING_DEBUG_LEVEL"
+    DebugMsg $1 "LOGGING_MODULES     = $LOGGING_MODULES"
+    LOGGING_FUNCTION_NAME="`__Logging_Pop`" 
 }
+
+_Logging.DebugLoggingConfig 9
 
 # EOF

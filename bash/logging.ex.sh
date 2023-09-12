@@ -12,11 +12,11 @@ source lib.inc.sh
 
 # use global namespace
 LOGGING_NAMESPACE="."
+LOGGING_DEBUG_LEVEL=0
+#LOGGING_MODULES="logging.ex"
 source ${LIB_DIRECTORY}/logging.inc.sh
 
-LOGGING_DEBUG_LEVEL=2
-#LOGGING_MODULES="logging.ex"
-DebugLoggingConfig 2
+#DebugLoggingConfig 2
 
 #SetLoggingModuleName logging.ex
 
