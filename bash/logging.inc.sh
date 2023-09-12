@@ -41,6 +41,15 @@ __Logging_Push(){ let __Logging_FunctionStackCtr++;eval "__Logging_FunctionStack
 __Logging_Pop(){ eval "echo -e \$__Logging_FunctionStackItem$__Logging_FunctionStackCtr;unset __Logging_FunctionStackItem$__Logging_FunctionStackCtr";let __Logging_FunctionStackCtr--;}
 #__Logging_Append(){ __Logging_Push "`__Logging_Pop`\n$1";}
 
+__Logging_EnterFunction () {
+    __Logging_Push $LOGGING_FUNCTION_NAME
+    LOGGING_FUNCTION_NAME=$1
+}
+
+__Logging_LeaveFunction () {
+    LOGGING_FUNCTION_NAME="`__Logging_Pop`" 
+}
+
 __Logging_TextColor () {
     local Text_Color=$__Logging_ColorOff
     if [ "$1" == "INFO" ]; then
@@ -140,23 +149,24 @@ _Logging.DebugCat () {
 
 eval "${LOGGING_NAMESPACE:1}DebugLs() { _Logging.DebugLs \"\$@\"; }"
 _Logging.DebugLs () {
+    _Exit () { 
+	__Logging_EnterFunction ${FUNCNAME[1]}
+	DebugMsg 1 "Exiting ${FUNCNAME[1]}"
+	__Logging_LeaveFunction
+    }
     if (( $1 <= $LOGGING_DEBUG_LEVEL )); then
-        __Logging_Push $LOGGING_FUNCTION_NAME
-        LOGGING_FUNCTION_NAME=${FUNCNAME[0]}
+	__Logging_EnterFunction ${FUNCNAME[0]}
 	local tmp_file=$(mktemp)
 	if ! [ -f $tmp_file ]; then
 	  _Logging.ErrorMsg "Cannot create temp file ($tmp_file)."
-          LOGGING_FUNCTION_NAME="`__Logging_Pop`" 
+	  __Logging_LeaveFunction
 	else
 	  _Logging.DebugMsg 9 "Using $tmp_file as temp file."
-          LOGGING_FUNCTION_NAME="`__Logging_Pop`" 
+	  __Logging_LeaveFunction
           ls -laR "$3" > "$tmp_file"
 	  DebugCat "$1" "$2" "$tmp_file" "$3"
 	  rm -f -- "$tmp_file"
 	fi
-        #ls -laR "$3" > /tmp/DebugLsDircontent.txt
-	#DebugCat "$1" "$2" /tmp/DebugLsDircontent.txt "$3"
-        #rm -f /tmp/DebugLsDircontent.txt
     fi
 }
 

@@ -12,7 +12,7 @@ source lib.inc.sh
 
 # use global namespace
 LOGGING_NAMESPACE="."
-LOGGING_DEBUG_LEVEL=0
+LOGGING_DEBUG_LEVEL=11
 #LOGGING_MODULES="logging.ex"
 source ${LIB_DIRECTORY}/logging.inc.sh
 
@@ -22,7 +22,7 @@ source ${LIB_DIRECTORY}/logging.inc.sh
 
 DebugMsg 2 "debug"
 DebugLs 2 "debugls" .
-DebugCat 2 "debugcat" logging.ex.sh
+DebugCat 2 "debugcat" lib.inc.sh
 InfoMsg "info"
 WarnMsg "warn"
 ErrorMsg "error"
