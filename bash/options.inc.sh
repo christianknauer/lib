@@ -68,10 +68,11 @@ function _Options.ParseOptions {
     local OPT_DESC=${1}
     local INPUT=$(__Options_get_input_for_getopts "${OPT_DESC}")
 
+    OPTERR=0
     shift
     while getopts ${INPUT} OPTION ${@};
     do
-        [ ${OPTION} == "?" ] && __Options_usage
+        #[ ${OPTION} == "?" ] && __Options_usage
         VARNAME=$(__Options_get_variable_name_for_option "${OPT_DESC}" "${OPTION}")
             [ "${VARNAME}" != "" ] && eval "${VARNAME}=${OPTARG:-true}" # && printf "\t%s\n" "* Declaring ${VARNAME}=${!VARNAME} -- OPTIONS='$OPTION'"
     done
