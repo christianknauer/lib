@@ -19,8 +19,6 @@ LOGGING_FUNCTION_NAME="${LOGGING_FUNCTION_NAME:=null}"
 
 # colors module (use default namespace "Colors.")
 source "$LIB_DIRECTORY/colors.inc.sh"
-# options module (use default namespace "Options.")
-source "$LIB_DIRECTORY/options.inc.sh"
 
 # global variables
 LOGGING_MODULE_NAME=$(basename "$0")
@@ -208,12 +206,6 @@ _Logging.ErrorCat () {
     __Logging_EnterFunction
     __Logging_MsgCat ERROR "$1" "$2"
     __Logging_LeaveFunction
-}
-
-eval "${LOGGING_NAMESPACE:1}ParseLoggingOptions() { _Logging.ParseLoggingOptions \"\$@\"; }"
-_Logging.ParseLoggingOptions () {
-    USAGE="[ -d LOGGING_DEBUG_LEVEL ]"
-    Options.ParseOptions "${USAGE}" ${@}
 }
 
 eval "${LOGGING_NAMESPACE:1}DebugLoggingConfig() { _Logging.DebugLoggingConfig \"\$@\"; }"
