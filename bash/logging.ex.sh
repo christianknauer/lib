@@ -25,8 +25,13 @@ ParseOptions () {
 ParseOptions ${@}
 DebugLoggingConfig 9
 
+TestFn2 () {
+	InfoMsg "inside info"
+}
+
 TestFn () {
 	InfoMsg "inside info"
+        TestFn2
 }
 DebugMsg 2 "debug"
 DebugLs 2 "debugls" .
