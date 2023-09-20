@@ -4,14 +4,14 @@
 
 # example showing use of options module
 
-source lib.inc.sh
+LIB_DIRECTORY=$(pwd)/..
 
-LOGGING_NAMESPACE="."
-source ${LIB_DIRECTORY}/logging.inc.sh
+#LOGGING_NAMESPACE="."
+#source ${LIB_DIRECTORY}/logging.inc.sh
 
 # use global namespace
 OPTIONS_NAMESPACE="."
-source ${LIB_DIRECTORY}/options.inc.sh
+source ${LIB_DIRECTORY}/options.sh
 
 USAGE="-u USER_NAME -d DATABASE -p PASS -s SID [ -a START_DATE_TIME ]"
 ParseOptions "${USAGE}" ${@}

@@ -1,11 +1,10 @@
 #!/bin/bash
 
-# file: colors.inc.sh
+# file: colors.sh
 
 # module options
 
-#_COLORS_DIR=$(dirname "$BASH_SOURCE")
-COLORS_NAMESPACE="${COLORS_NAMESPACE:=.Colors.}"
+# COLORS_NAMESPACE="${COLORS_NAMESPACE:=.Colors.}"
 
 # global variables
 
@@ -13,7 +12,7 @@ COLORS_NAMESPACE="${COLORS_NAMESPACE:=.Colors.}"
 
 # private functions
 
-_Colors.GetColor () {
+__Colors_GetColor () {
 
   # Color escape codes
 
@@ -95,6 +94,6 @@ _Colors.GetColor () {
 
 # public functions
 
-eval "${COLORS_NAMESPACE:1}GetColor() { _Colors.GetColor \"\$@\"; }"
+# eval "${COLORS_NAMESPACE:1}GetColor() { __Colors_GetColor \"\$@\"; }"
 
 # EOF

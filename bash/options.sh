@@ -1,8 +1,6 @@
 #!/bin/bash
 
-# file: options.inc.sh
-
-[ -z "$LOGGING_NAMESPACE" ] && echo "options.inc.sh: logging module not available, terminating." && exit 1
+# file: options.sh
 
 # module options
 
@@ -35,6 +33,7 @@ function __Options_check_for_required {
                 #[ -z "${!VARNAME}" ] && printf "ERROR: %s\n" "Option -${OPTION} must been set." && __Options_usage
 		if [ -z "${!VARNAME}" ]; then
 			_Logging.ErrorMsg "Option -${OPTION} must been set."
+			echo "Option -${OPTION} must been set."
 			__Options_usage
 		fi
         REQUIRED=${REQUIRED:1}
