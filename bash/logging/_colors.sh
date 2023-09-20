@@ -89,6 +89,8 @@ __Colors_GetColor () {
   local On_ICyan='\033[0;106m'    # Cyan
   local On_IWhite='\033[0;107m'   # White
 
+  [ ! "$LOGGING_STYLE" == "color" ] && echo "" && return 0
+
   eval "echo \"\$$1\""
 }
 

@@ -24,8 +24,6 @@ LOGGING_LOGFILE="${LOGGING_LOGFILE:=/dev/null}"
 [ ! -e "${LOGGING_LIB_DIRECTORY}" ] && echo "$0 (logging lib) ERROR: logging lib directory \"${LOGGING_LIB_DIRECTORY}\" does not exist" && exit 1
 
 # colors 
-# colors module (use default namespace "Colors.")
-# source "$LIB_DIRECTORY/colors.inc.sh"
 source "${LOGGING_LIB_DIRECTORY}/_colors.sh"
 
 # load required modules
@@ -37,6 +35,7 @@ source "${LOGGING_LIB_DIRECTORY}/_colors.sh"
 # colors
 
 __Logging_ColorOff=$(__Colors_GetColor Color_Off)
+
 __Logging_Blue=$(__Colors_GetColor Blue)
 __Logging_Purple=$(__Colors_GetColor Purple)
 __Logging_Yellow=$(__Colors_GetColor Yellow)
@@ -44,20 +43,33 @@ __Logging_Red=$(__Colors_GetColor Red)
 __Logging_BRed=$(__Colors_GetColor BRed)
 __Logging_BWhite=$(__Colors_GetColor BWhite)
 
+__Logging_ColorError=${__Logging_BRed}
+__Logging_ColorWarn=${__Logging_Yellow}
+__Logging_ColorInfo=${__Logging_Blue}
+__Logging_ColorDebug=${__Logging_Purple}
+
 # private functions
+
+__Logging_Stream () {
+    # no redirection
+    local Stream=""
+    # redirect to stderr
+    [ "$1" == "ERROR" ] && echo '>&2' && return 0    
+    echo ""
+}
 
 __Logging_TextColor () {
     local Text_Color=$__Logging_ColorOff
     if [ "$1" == "INFO" ]; then
-	Text_Color=$__Logging_Blue
+	Text_Color=$__Logging_ColorInfo
     elif [ "$1" == "DEBUG" ]; then
-	Text_Color=$__Logging_Purple
+	Text_Color=$__Logging_ColorDebug
     elif [ "$1" == "WARN" ]; then
-	Text_Color=$__Logging_Yellow
+	Text_Color=$__Logging_ColorWarn
     elif [ "$1" == "ERROR" ]; then
-	Text_Color=$__Logging_Red
-    else 
-	Text_Color=$__Logging_BRed
+	Text_Color=$__Logging_ColorError
+#    else 
+#	Text_Color=$__Logging_BRed
     fi
     echo "$Text_Color"
 }
@@ -70,35 +82,47 @@ __Logging_FormatMsg () {
     local LoggingFnNameString="${SPACES:0:${#FUNCNAME[@]}-5}${FUNCNAME[4]}"
     local SourceFile=$(basename ${BASH_SOURCE[4]})
     local LineNo=${BASH_LINENO[3]}
-    if [ "$LOGGING_STYLE" == "color" ]; then
-	    echo "[$Text_Color$Level$__Logging_ColorOff $Time_Stamp $__Logging_BWhite${SourceFile}:${LineNo} ${LoggingFnNameString}$__Logging_ColorOff] $2" 
-    else 
-        echo "[$Level $Time_Stamp ${}$LoggingFnNameString] $2" 
-    fi
+
+    [ "${Time_Stamp}" != "" ] && Time_Stamp="$Time_Stamp "
+
+    #echo "[$Text_Color$Level$__Logging_ColorOff $Time_Stamp$__Logging_BWhite${SourceFile}:${LineNo} ${LoggingFnNameString}$__Logging_ColorOff] $2" 
+    echo "[$Text_Color$Level$__Logging_ColorOff $Time_Stamp$__Logging_BWhite${LoggingFnNameString} (${SourceFile}:${LineNo})$__Logging_ColorOff] $2" 
 }
 
 __Logging_Msg () {
     local MsgText=$(__Logging_FormatMsg "$1" "$2")
+    local Stream=$(__Logging_Stream "$1")
     if $(__Logging_DebuggingModule); then
-        echo -e "$MsgText" | tee -a "${LOGGING_LOGFILE}"
+	 echo -e "$MsgText" >> "${LOGGING_LOGFILE}"
+         eval "echo -e \"\$MsgText\" $Stream"
+#	 echo -e "$MsgText"  | tee -a "${LOGGING_LOGFILE}"
     fi
 }
 
 __Logging_MsgCat () {
+    local Stream=$(__Logging_Stream "$1")
     local Source=$4
     if [ -z "$4" ]; then
 	    Source=$3
     fi
     local MsgText=$(__Logging_FormatMsg "$1" "(content of \"$Source\") $2")
     if $(__Logging_DebuggingModule); then
-	echo -e -n "$MsgText\n" | tee -a "${LOGGING_LOGFILE}"
-        if [ "$LOGGING_STYLE" == "color" ]; then
-            echo -e -n "$__Logging_Blue"     | tee -a "${LOGGING_LOGFILE}"
-	    cat "$3"                         | tee -a "${LOGGING_LOGFILE}"
- 	    echo -e -n "$__Logging_ColorOff" | tee -a "${LOGGING_LOGFILE}"
-        else 
-            cat "$3" | tee -a "${LOGGING_LOGFILE}"
-        fi
+	# write to log file
+	echo -e -n "$MsgText\n"          >> "${LOGGING_LOGFILE}" 
+        echo -e -n "$__Logging_Blue"     >> "${LOGGING_LOGFILE}" 
+        cat "$3"                         >> "${LOGGING_LOGFILE}" 
+ 	echo -e -n "$__Logging_ColorOff" >> "${LOGGING_LOGFILE}" 
+
+	# write to output stream (stdout/stderr)
+	eval "echo -e -n \"\$MsgText\\n\"        $Stream"          
+        eval "echo -e -n \"$__Logging_Blue\"     $Stream"     
+        eval "cat \"$3\"                         $Stream"                         
+ 	eval "echo -e -n \"$__Logging_ColorOff\" $Stream" 
+	
+ 	#echo -e -n "$MsgText\n"          | tee -a "${LOGGING_LOGFILE}"
+        #echo -e -n "$__Logging_Blue"     | tee -a "${LOGGING_LOGFILE}"
+        #cat "$3"                         | tee -a "${LOGGING_LOGFILE}"
+ 	#echo -e -n "$__Logging_ColorOff" | tee -a "${LOGGING_LOGFILE}"
     fi
 }
 
