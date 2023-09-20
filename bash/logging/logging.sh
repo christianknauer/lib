@@ -13,8 +13,8 @@ LOGGING_LIB_DIRECTORY="${LIB_DIRECTORY}/logging"
 # mutable module options
 LOGGING_STYLE="${LOGGING_STYLE:=color}"
 LOGGING_DEBUG_LEVEL="${LOGGING_DEBUG_LEVEL:=0}"
-LOGGING_SCRIPTS="${LOGGING_SCRIPTS:=ALL}"
-LOGGING_FUNCTONS="${LOGGING_FUNCTIONS:=ALL}"
+LOGGING_SCRIPTS="${LOGGING_SCRIPTS:=.*}"
+LOGGING_FUNCTONS="${LOGGING_FUNCTIONS:=.*}"
 # set this to "echo" to disable all timestamps
 LOGGING_TIMESTAMP="${LOGGING_TIMESTAMP:=date +\"%d.%m.%Y %T\"}"
 LOGGING_LOGFILE="${LOGGING_LOGFILE:=/dev/null}"
@@ -130,8 +130,10 @@ __Logging_DebuggingModule () {
     local Script=$(basename ${BASH_SOURCE[4]})
     local Function=${FUNCNAME[4]}
 
-    if [[ $LOGGING_SCRIPTS == "ALL" || $LOGGING_SCRIPTS =~ "$Script" ]]; then
-        if [[ $LOGGING_FUNCTIONS == "ALL" || $LOGGING_FUNCTIONS =~ "$Function" ]]; then
+    if [[ "${Script}" =~ $LOGGING_SCRIPTS ]]; then
+   # if [[ $LOGGING_SCRIPTS == "ALL" || $LOGGING_SCRIPTS =~ "$Script" ]]; then
+        if [[ "${Function}" =~ $LOGGING_FUNCTIONS ]]; then
+        #if [[ $LOGGING_FUNCTIONS == "ALL" || $LOGGING_FUNCTIONS =~ "$Function" ]]; then
    	    return 0
         else 
 	    return 1
