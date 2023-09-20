@@ -17,6 +17,7 @@ LOGGING_SCRIPTS="${LOGGING_SCRIPTS:=ALL}"
 LOGGING_FUNCTONS="${LOGGING_FUNCTIONS:=ALL}"
 # set this to "echo" to disable all timestamps
 LOGGING_TIMESTAMP="${LOGGING_TIMESTAMP:=date +\"%d.%m.%Y %T\"}"
+LOGGING_LOGFILE="${LOGGING_LOGFILE:=/dev/null}"
 
 # load library files
 
@@ -79,7 +80,7 @@ __Logging_FormatMsg () {
 __Logging_Msg () {
     local MsgText=$(__Logging_FormatMsg "$1" "$2")
     if $(__Logging_DebuggingModule); then
-        echo -e "$MsgText" 
+        echo -e "$MsgText" | tee -a "${LOGGING_LOGFILE}"
     fi
 }
 
@@ -90,11 +91,13 @@ __Logging_MsgCat () {
     fi
     local MsgText=$(__Logging_FormatMsg "$1" "(content of \"$Source\") $2")
     if $(__Logging_DebuggingModule); then
-	    echo -e -n "$MsgText\n" # ; cat "$4" 
+	echo -e -n "$MsgText\n" | tee -a "${LOGGING_LOGFILE}"
         if [ "$LOGGING_STYLE" == "color" ]; then
-            echo -e -n "$__Logging_Blue" ; cat "$3" ; echo -e -n "$__Logging_ColorOff"
+            echo -e -n "$__Logging_Blue"     | tee -a "${LOGGING_LOGFILE}"
+	    cat "$3"                         | tee -a "${LOGGING_LOGFILE}"
+ 	    echo -e -n "$__Logging_ColorOff" | tee -a "${LOGGING_LOGFILE}"
         else 
-            cat "$3" 
+            cat "$3" | tee -a "${LOGGING_LOGFILE}"
         fi
     fi
 }
@@ -199,6 +202,7 @@ _Logging.DebugLoggingConfig () {
         __Logging_Msg DEBUG "$LogLvl LOGGING_SCRIPTS       = $LOGGING_SCRIPTS"
         __Logging_Msg DEBUG "$LogLvl LOGGING_FUNCTIONS     = $LOGGING_FUNCTIONS"
         __Logging_Msg DEBUG "$LogLvl LOGGING_TIMESTAMP     = $LOGGING_TIMESTAMP"
+        __Logging_Msg DEBUG "$LogLvl LOGGING_LOGFILE       = $LOGGING_LOGFILE"
     fi
 }
 

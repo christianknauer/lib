@@ -24,7 +24,7 @@ source subscript.sh
 # functions
 
 # main
-USAGE="[ -d LOGGING_DEBUG_LEVEL ]"
+USAGE="[ -d LOGGING_DEBUG_LEVEL -L LOGGING_LOGFILE ]"
 Options.ParseOptions "${USAGE}" ${@}
 
 DebugLoggingConfig 9
