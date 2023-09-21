@@ -2,26 +2,36 @@
 
 # file: logging.inc.sh
 
-[ -z "${LIB_DIRECTORY}" ] && echo "$0 (logging lib) ERROR: LIB_DIRECTORY is not defined, terminating" && exit 1
-LIB_DIRECTORY=$(readlink -f -- "${LIB_DIRECTORY}")
-[ ! -e "${LIB_DIRECTORY}" ] && echo "$0 (logging lib) ERROR: lib directory \"${LIB_DIRECTORY}\" does not exist" && exit 1
+# requirements: basename, cat, readlink
+
+__Logging.InternalError () {
+    local msg=$1; local source=$(basename ${BASH_SOURCE[1]}); local line=${BASH_LINENO[0]}; local func=${FUNCNAME[1]}
+    # colors
+    local ColorOff='\033[0m'; local BRed='\033[1;31m'; local White='\033[0;37m' 
+    echo -e "[${BRed}ERROR${ColorOff}${White} ${func} (${source}:${line})${ColorOff}] ${msg}" >&2
+}
+
+#LIB_DIRECTORY=$(readlink -f -- "${LIB_DIRECTORY}")
+#[ ! -e "${LIB_DIRECTORY}" ] && __Logging.InternalError "lib directory \"${LIB_DIRECTORY}\" does not exist" && exit 1
 
 # immutable module options
 LOGGING_NAMESPACE="${LOGGING_NAMESPACE:=.Logging.}"
-LOGGING_LIB_DIRECTORY="${LIB_DIRECTORY}/logging"
+LOGGING_LIB_DIRECTORY=$(readlink -f -- "${LIB_DIRECTORY}/logging")
 
 # mutable module options
 LOGGING_STYLE="${LOGGING_STYLE:=color}"
 LOGGING_DEBUG_LEVEL="${LOGGING_DEBUG_LEVEL:=0}"
 LOGGING_SCRIPTS="${LOGGING_SCRIPTS:=.*}"
 LOGGING_FUNCTONS="${LOGGING_FUNCTIONS:=.*}"
-# set this to "echo" to disable all timestamps
-LOGGING_TIMESTAMP="${LOGGING_TIMESTAMP:=date +\"%d.%m.%Y %T\"}"
+LOGGING_TIMESTAMP="${LOGGING_TIMESTAMP:=date +\"%d.%m.%Y %T\"}" # set this to "echo" to disable all timestamps
 LOGGING_LOGFILE="${LOGGING_LOGFILE:=/dev/null}"
 
-# load library files
+# checks
 
-[ ! -e "${LOGGING_LIB_DIRECTORY}" ] && echo "$0 (logging lib) ERROR: logging lib directory \"${LOGGING_LIB_DIRECTORY}\" does not exist" && exit 1
+[ -z "${LIB_DIRECTORY}" ] && __Logging.InternalError "LIB_DIRECTORY is not defined" && exit 1
+[ ! -e "${LOGGING_LIB_DIRECTORY}" ] && __Logging.InternalError "logging lib directory \"${LOGGING_LIB_DIRECTORY}\" does not exist" && exit 1
+
+# load library files
 
 # colors 
 source "${LOGGING_LIB_DIRECTORY}/_colors.sh"
@@ -101,22 +111,29 @@ __Logging_Msg () {
 
 __Logging_MsgCat () {
     local Stream=$(__Logging_Stream "$1")
+    local file=$3
     local Source=$4
     if [ -z "$4" ]; then
-	    Source=$3
+	    Source=$file
     fi
     local MsgText=$(__Logging_FormatMsg "$1" "(content of \"$Source\") $2")
     if $(__Logging_DebuggingModule); then
-	# write to log file
+
 	echo -e -n "$MsgText\n"          >> "${LOGGING_LOGFILE}" 
+	eval "echo -e -n \"\$MsgText\\n\"        $Stream"          
+
+	# check if file exists
+	[ ! -f "${file}" ] && __Logging.InternalError "file \"${file}\" does not exist" && return 0
+	#[ ! -f "${file}" ] && _Logging.ErrorMsg "file \"${file}\" does not exist" && return 0
+
+	# write to log file
         echo -e -n "$__Logging_Blue"     >> "${LOGGING_LOGFILE}" 
-        cat "$3"                         >> "${LOGGING_LOGFILE}" 
+        cat "${file}"                    >> "${LOGGING_LOGFILE}" 
  	echo -e -n "$__Logging_ColorOff" >> "${LOGGING_LOGFILE}" 
 
 	# write to output stream (stdout/stderr)
-	eval "echo -e -n \"\$MsgText\\n\"        $Stream"          
         eval "echo -e -n \"$__Logging_Blue\"     $Stream"     
-        eval "cat \"$3\"                         $Stream"                         
+        eval "cat \"${file}\"                    $Stream"                         
  	eval "echo -e -n \"$__Logging_ColorOff\" $Stream" 
 	
  	#echo -e -n "$MsgText\n"          | tee -a "${LOGGING_LOGFILE}"
@@ -179,15 +196,23 @@ _Logging.DebugCat () {
 
 eval "${LOGGING_NAMESPACE:1}DebugLs() { _Logging.DebugLs \"\$@\"; }"
 _Logging.DebugLs () {
-    if (( $1 <= $LOGGING_DEBUG_LEVEL )); then
+    local lvl=$1
+    local msg=$2
+    local dir=$3
+    if (( ${lvl} <= ${LOGGING_DEBUG_LEVEL} )); then
+	# [ ! -d "${dir}" ] && _Logging.ErrorMsg "directory \"${dir}\" does not exist" && return 0
+	[ ! -d "${dir}" ] && \
+          __Logging_Msg DEBUG "[${lvl}/${LOGGING_DEBUG_LEVEL}] ${msg}" && \
+	  __Logging.InternalError "directory \"${dir}\" does not exist" && return 0
 	local tmp_file=$(mktemp)
-	if ! [ -f $tmp_file ]; then
-	  _Logging.ErrorMsg "Cannot create temp file ($tmp_file)."
+	if ! [ -f "${tmp_file}" ]; then
+	  # _Logging.ErrorMsg "cannot create temp file \"${tmp_file}\""
+	  __Logging.InternalError "cannot create temp file \"${tmp_file}\""
 	else
-	  _Logging.DebugMsg 9 "Using $tmp_file as temp file."
-          ls -laR "$3" > "$tmp_file"
-          __Logging_MsgCat DEBUG "[$1/$LOGGING_DEBUG_LEVEL] $2" "$tmp_file" "$3"
-	  rm -f -- "$tmp_file"
+	  #_Logging.DebugMsg 9 "using \"${tmp_file}\" as temp file"
+          ls -laR "${dir}" > "${tmp_file}"
+          __Logging_MsgCat DEBUG "[${lvl}/${LOGGING_DEBUG_LEVEL}] ${msg}" "${tmp_file}" "${dir}"
+	  rm -f -- "${tmp_file}"
 	fi
     fi
 }

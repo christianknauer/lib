@@ -39,8 +39,10 @@ TestFn () {
         TestFn2
 }
 DebugMsg 2 "debug"
-DebugLs 2 "debugls" .
-DebugCat 2 "debugcat" data.txt
+DebugLs 2 "ls ." .
+DebugLs 2 "ls nonexistent" nonexistent 
+DebugCat 2 "cat data.txt" data.txt
+DebugCat 2 "cat nonexistent" nonexistent
 InfoMsg "info"
 WarnMsg "warn"
 ErrorMsg "error"
