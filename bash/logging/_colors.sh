@@ -1,10 +1,6 @@
-#!/bin/bash
-
-# file: colors.sh
-
-# module options
-
-# COLORS_NAMESPACE="${COLORS_NAMESPACE:=.Colors.}"
+# file: _colors.sh
+#
+# used by: logging.sh
 
 # global variables
 
@@ -13,7 +9,7 @@
 # private functions
 
 __Colors_GetColor () {
-
+  local arg=$1
   # Color escape codes
 
   # Off
@@ -91,11 +87,7 @@ __Colors_GetColor () {
 
   [ ! "$LOGGING_STYLE" == "color" ] && echo "" && return 0
 
-  eval "echo \"\$$1\""
+  eval "echo \"\$$arg\""
 }
-
-# public functions
-
-# eval "${COLORS_NAMESPACE:1}GetColor() { __Colors_GetColor \"\$@\"; }"
 
 # EOF

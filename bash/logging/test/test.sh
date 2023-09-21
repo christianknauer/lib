@@ -14,6 +14,7 @@ LOGGING_LIB_DIRECTORY="${LIB_DIRECTORY}/logging"
 LOGGING_NAMESPACE="." source "${LOGGING_LIB_DIRECTORY}/logging.sh"; ec=$?
 [ ! $ec -eq 0 ] &&  echo "$0: ERROR: failed to initialize logging lib" && exit $ec
 
+LOGGING_TIMESTAMP=echo
 # load options module (use default namespace "Options.")
 source "${LIB_DIRECTORY}/options.sh"
 
@@ -32,17 +33,18 @@ DebugLoggingConfig 9
 TestFn2 () {
 	InfoMsg "inside info"
         TestFn3
+        DebugMsg 1 "inside debug"
 }
 
 TestFn () {
 	InfoMsg "inside info"
         TestFn2
 }
-DebugMsg 2 "debug"
+DebugMsg 1 "debug"
 DebugLs 2 "ls ." .
 DebugLs 2 "ls nonexistent" nonexistent 
 DebugCat 2 "cat data.txt" data.txt
-DebugCat 2 "cat nonexistent" nonexistent
+DebugCat 3 "cat nonexistent" nonexistent
 InfoMsg "info"
 WarnMsg "warn"
 ErrorMsg "error"
