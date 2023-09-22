@@ -14,9 +14,9 @@ LOGGING_LIB_DIRECTORY=$(readlink -f -- "${LIB_DIRECTORY}/logging")
 
 # mutable module options
 LOGGING_STYLE="${LOGGING_STYLE:=color}"
-LOGGING_INFO_DEFAULT_LEVEL="${LOGGING_INFO_DEFAULT_LEVEL:=1}"
-LOGGING_INFO_LEVEL="${LOGGING_INFO_LEVEL:=9}"
-LOGGING_DEBUG_DEFAULT_LEVEL="${LOGGING_DEBUG_DEFAULT_LEVEL:=1}"
+LOGGING_INFO_STD_LEVEL="${LOGGING_INFO_STD_LEVEL:=1}"
+LOGGING_INFO_LEVEL="${LOGGING_INFO_LEVEL:=0}"
+LOGGING_DEBUG_STD_LEVEL="${LOGGING_DEBUG_STD_LEVEL:=1}"
 LOGGING_DEBUG_LEVEL="${LOGGING_DEBUG_LEVEL:=0}"
 LOGGING_SCRIPTS="${LOGGING_SCRIPTS:=.*}"
 LOGGING_FUNCTONS="${LOGGING_FUNCTIONS:=.*}"
@@ -61,10 +61,17 @@ __Logging_ColorDebug=$(__Colors_GetColor Purple)
 
 __Logging_Stream () {
     local type=$1
-    # redirect to stderr
-    [ "${type}" == "ERROR" ] && echo '>&2' && return 0    
-    # no redirection
-    echo ""
+    local retval=""
+    if [ "${type}" == "ERROR" ]; then
+	retval=">&2"
+    elif [ "${type}" == "WARN" ]; then
+	retval=">&2"
+    fi
+    echo "${retval}"
+#    # redirect to stderr
+#    [ "${type}" == "ERROR" ] && echo '>&2' && return 0    
+#    # no redirection
+#    echo ""
 }
 
 __Logging_FormatLevel () {
@@ -148,17 +155,19 @@ __Logging_MsgCat () {
     local Stream=$(__Logging_Stream "${type}")
     local Text=$(__Logging_FormatMsg "${type}" ${lvl} "(content of \"${source}\") ${msg}")
 
+    # write to log file & stream
+    echo -e -n "${Text}\n"            >> "${LOGGING_LOGFILE}" 
+    eval "echo -e -n \"\$Text\\n\"        $Stream"          
+
     # check if file exists
     [ ! -f "${file}" ] && __Logging.InternalError "file \"${file}\" does not exist" && return 0
 
     # write to log file
-    echo -e -n "${Text}\n"            >> "${LOGGING_LOGFILE}" 
     echo -e -n "$__Logging_ColorInfo" >> "${LOGGING_LOGFILE}" 
     cat "${file}"                     >> "${LOGGING_LOGFILE}" 
     echo -e -n "$__Logging_ColorOff"  >> "${LOGGING_LOGFILE}" 
 
     # write to output stream (stdout/stderr)
-    eval "echo -e -n \"\$Text\\n\"        $Stream"          
     eval "echo -e -n \"$__Logging_ColorInfo\" $Stream"     
     eval "cat \"${file}\"                     $Stream"                         
     eval "echo -e -n \"$__Logging_ColorOff\"  $Stream" 
@@ -223,21 +232,24 @@ _Logging.DebugLoggingConfig () {
     __Logging.IsInactive && return 0
     __Logging.InsufficientLevel ${lvl} ${LOGGING_DEBUG_LEVEL} && return 0
 
-    __Logging_Msg DEBUG ${lvl} "LOGGING_NAMESPACE     = $LOGGING_NAMESPACE"
-    __Logging_Msg DEBUG ${lvl} "LOGGING_LIB_DIRECTORY = ${LOGGING_LIB_DIRECTORY}"
-    __Logging_Msg DEBUG ${lvl} "LOGGING_STYLE         = $LOGGING_STYLE"
-    __Logging_Msg DEBUG ${lvl} "LOGGING_DEBUG_LEVEL   = $LOGGING_DEBUG_LEVEL"
-    __Logging_Msg DEBUG ${lvl} "LOGGING_SCRIPTS       = $LOGGING_SCRIPTS"
-    __Logging_Msg DEBUG ${lvl} "LOGGING_FUNCTIONS     = $LOGGING_FUNCTIONS"
-    __Logging_Msg DEBUG ${lvl} "LOGGING_TIMESTAMP     = $LOGGING_TIMESTAMP"
-    __Logging_Msg DEBUG ${lvl} "LOGGING_LOGFILE       = $LOGGING_LOGFILE"
+    __Logging_Msg DEBUG ${lvl} "LOGGING_NAMESPACE       = $LOGGING_NAMESPACE"
+    __Logging_Msg DEBUG ${lvl} "LOGGING_LIB_DIRECTORY   = ${LOGGING_LIB_DIRECTORY}"
+    __Logging_Msg DEBUG ${lvl} "LOGGING_STYLE           = $LOGGING_STYLE"
+    __Logging_Msg DEBUG ${lvl} "LOGGING_INFO_STD_LEVEL  = $LOGGING_INFO_STD_LEVEL"
+    __Logging_Msg DEBUG ${lvl} "LOGGING_DEBUG_STD_LEVEL = $LOGGING_DEBUG_DEFAULT_LEVE"
+    __Logging_Msg DEBUG ${lvl} "LOGGING_INFO_LEVEL      = $LOGGING_INFO_LEVEL"
+    __Logging_Msg DEBUG ${lvl} "LOGGING_DEBUG_LEVEL     = $LOGGING_DEBUG_LEVEL"
+    __Logging_Msg DEBUG ${lvl} "LOGGING_SCRIPTS         = $LOGGING_SCRIPTS"
+    __Logging_Msg DEBUG ${lvl} "LOGGING_FUNCTIONS       = $LOGGING_FUNCTIONS"
+    __Logging_Msg DEBUG ${lvl} "LOGGING_TIMESTAMP       = $LOGGING_TIMESTAMP"
+    __Logging_Msg DEBUG ${lvl} "LOGGING_LOGFILE         = $LOGGING_LOGFILE"
 }
 
 # info
 
 eval "${LOGGING_NAMESPACE:1}InfoMsg() { _Logging.InfoMsg \"\$@\"; }"
 _Logging.InfoMsg () {
-    local nargs=$#; local lvl=${LOGGING_INFO_DEFAULT_LEVEL}; local msg=$1
+    local nargs=$#; local lvl=${LOGGING_INFO_STD_LEVEL}; local msg=$1
     ((${nargs} == 2)) && lvl=$1 && msg=$2
 
     __Logging.IsInactive && return 0
@@ -247,7 +259,7 @@ _Logging.InfoMsg () {
 
 eval "${LOGGING_NAMESPACE:1}InfoCat() { _Logging.InfoCat \"\$@\"; }"
 _Logging.InfoCat () {
-    local nargs=$#; local lvl=${LOGGING_INFO_DEFAULT_LEVEL}; local msg=$1; local file=$2
+    local nargs=$#; local lvl=${LOGGING_INFO_STD_LEVEL}; local msg=$1; local file=$2
     ((${nargs} == 3)) && lvl=$1 && msg=$2; local file=$2
 
     __Logging.IsInactive && return 0

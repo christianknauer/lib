@@ -25,7 +25,7 @@ source subscript.sh
 # functions
 
 # main
-USAGE="[ -d LOGGING_DEBUG_LEVEL -L LOGGING_LOGFILE ]"
+USAGE="[ -I LOGGING_INFO_LEVEL -D LOGGING_DEBUG_LEVEL -L LOGGING_LOGFILE ]"
 Options.ParseOptions "${USAGE}" ${@}
 
 DebugLoggingConfig 9
@@ -50,6 +50,7 @@ InfoMsg 2 "info lvl 2"
 WarnMsg "warn"
 ErrorMsg "error"
 InfoCat "InfoCat data.txt" data.txt
+InfoCat 2 "cat nonexistent" nonexistent
 if $(DebuggingIsActive 2); then
   InfoMsg "debugging is active"
 else
