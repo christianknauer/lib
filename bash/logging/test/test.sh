@@ -45,9 +45,11 @@ DebugLs 2 "ls ." .
 DebugLs 2 "ls nonexistent" nonexistent 
 DebugCat 2 "cat data.txt" data.txt
 DebugCat 3 "cat nonexistent" nonexistent
-InfoMsg "info"
+InfoMsg "info default lvl"
+InfoMsg 2 "info lvl 2"
 WarnMsg "warn"
 ErrorMsg "error"
+InfoCat "InfoCat data.txt" data.txt
 if $(DebuggingIsActive 2); then
   InfoMsg "debugging is active"
 else
