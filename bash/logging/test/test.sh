@@ -33,6 +33,7 @@ DebugLoggingConfig 9
 TestFn2 () {
 	InfoMsg "inside info"
         TestFn3
+        TestFn3
         DebugMsg 1 "inside debug"
 }
 

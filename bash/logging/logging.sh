@@ -74,6 +74,26 @@ __Logging_Stream () {
 #    echo ""
 }
 
+__LOGGING_LAST_LEVEL=5
+__Logging_FormatFunction () {
+    local type=$1
+    local func=$2
+    local depth=$3
+    local retval=" ${func}"
+
+    local cEmptyLine="                                      "
+    local Callsymbol="\ue0b0" # arrow
+    local Callsymbol="\u2517" # arrow
+    #echo -n "$depth - $__LOGGING_LAST_LEVEL" >&2
+    [ ${depth} -eq ${__LOGGING_LAST_LEVEL} ] && Callsymbol=" "
+    [ ${depth} -eq 5 ] && Callsymbol=" "
+  
+    if [[ "${type}" == "INFO" || "${type}" == "DEBUG" ]]; then
+        retval="${cEmptyLine:0:${depth}-5}${Callsymbol}${func}"
+    fi
+    echo "${retval}"
+}
+
 __Logging_FormatLevel () {
     local type=$1
     local lvl=$2
@@ -113,13 +133,16 @@ __Logging_FormatMsg () {
     local Level="$(__Logging_FormatLevel ${type} ${lvl})"
     local Time=$(eval $LOGGING_TIMESTAMP)
     local Type=$(printf '%-5s' "${type}")
-    local Func="${cEmptyLine:0:${#FUNCNAME[@]}-5}${FUNCNAME[4]}"
+    local Depth=${#FUNCNAME[@]}
+    local Func=${FUNCNAME[4]}
+    #local Func="${cEmptyLine:0:${#FUNCNAME[@]}-5}${FUNCNAME[4]}"
+    Func="$(__Logging_FormatFunction ${type} ${Func} ${Depth})"
     local Source=$(basename ${BASH_SOURCE[4]})
     local LineNo=${BASH_LINENO[3]}
 
-    [ "${Time}" != "" ] && Time="${Time} "
+    [ "${Time}" != "" ] && Time=" ${Time}"
 
-    echo "[${Color}${Type}${__Logging_ColorOff}${Level} ${Time}${cWhite}${Func} (${Source}:${LineNo})${__Logging_ColorOff}] ${msg}" 
+    echo "[${Color}${Type}${__Logging_ColorOff}${Level}${Time}${cWhite}${Func} (${Source}:${LineNo})${__Logging_ColorOff}] ${msg}" 
 }
 
 __Logging.IsInactive () {
@@ -143,6 +166,8 @@ __Logging_Msg () {
 
     local Text=$(__Logging_FormatMsg "${type}" ${lvl} "${msg}")
     local Stream=$(__Logging_Stream "${type}")
+    local Depth=${#FUNCNAME[@]}; ((Depth++))
+    __LOGGING_LAST_LEVEL=$Depth
 
     echo -e "${Text}" >> "${LOGGING_LOGFILE}"
     eval "echo -e \"\$Text\" $Stream"
