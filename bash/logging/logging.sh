@@ -8,8 +8,10 @@
 # - global variables for return values: retval, retval1, retval2, ... 
 # - global variable for error return value: reterr
 
+# module configuration
+
 # immutable module options
-LOGGING_NAMESPACE="${LOGGING_NAMESPACE:=.Logging.}"
+LOGGING_NAMESPACE="${LOGGING_NAMESPACE:=_Logging_}"
 LOGGING_LIB_DIRECTORY=$(readlink -f -- "${LIB_DIRECTORY}/logging")
 
 # mutable module options
@@ -23,22 +25,23 @@ LOGGING_FUNCTONS="${LOGGING_FUNCTIONS:=.*}"
 LOGGING_TIMESTAMP="${LOGGING_TIMESTAMP:=date +\"%d.%m.%Y %T\"}" # set this to "echo" to disable all timestamps
 LOGGING_LOGFILE="${LOGGING_LOGFILE:=/dev/null}"
 
-# internal helper function
-__Logging.InternalError () {
-    local msg=$1; local source=$(basename ${BASH_SOURCE[1]}); local line=${BASH_LINENO[0]}; local func=${FUNCNAME[1]}
-    # colors
-    local cColorOff='\033[0m'; local cBRed='\033[1;31m'; local cWhite='\033[0;37m' 
-
-    local Text="[${cBRed}LIBERROR${cColorOff}${cWhite} ${func} (${source}:${line})${cColorOff}] ${msg}"
-    echo -e "${Text}" >&2; echo -e "${Text}" >> "${LOGGING_LOGFILE}" 
-}
+# initialize library
 
 # checks
+[ -z "${LIB_DIRECTORY}" ] && echo -e "FATAL ERROR logging module ($(basename $0)): LIB_DIRECTORY is not defined" >&2 && exit 1
+[ ! -f "${LIB_DIRECTORY}/core.sh" ] && echo -e "FATAL ERROR logging module ($(basename $0)): core.sh not found in \"${LIB_DIRECTORY}\"" >&2 && exit 1
+# load core (if not already loaded)
+[ -z "${CORE_NAMESPACE}" ] && source "${LIB_DIRECTORY}/core.sh"
 
-[ -z "${LIB_DIRECTORY}" ] && __Logging.InternalError "LIB_DIRECTORY is not defined" && exit 1
-[ ! -e "${LOGGING_LIB_DIRECTORY}" ] && __Logging.InternalError "logging lib directory \"${LOGGING_LIB_DIRECTORY}\" does not exist" && exit 1
+# imports
+# import LibError from lib as __Logging_LibError
+eval "__Logging_LibError () { ${CORE_NAMESPACE:1}LibError \"\$@\"; }"
 
-# load library files
+# checks
+# module directory
+[ ! -e "${LOGGING_LIB_DIRECTORY}" ] && __Logging_LibError "logging lib directory \"${LOGGING_LIB_DIRECTORY}\" does not exist" && exit 1
+
+# load additional library files
 
 # colors 
 source "${LOGGING_LIB_DIRECTORY}/_colors.sh"
@@ -145,7 +148,7 @@ __Logging_FormatMsg () {
     echo "[${Color}${Type}${__Logging_ColorOff}${Level}${Time}${cWhite}${Func} (${Source}:${LineNo})${__Logging_ColorOff}] ${msg}" 
 }
 
-__Logging.IsInactive () {
+__Logging_IsInactive () {
     local Script=$(basename ${BASH_SOURCE[3]})
     local Function=${FUNCNAME[3]}
 
@@ -154,7 +157,7 @@ __Logging.IsInactive () {
     return 0
 }
 
-__Logging.InsufficientLevel () {
+__Logging_InsufficientLevel () {
     local lvl=$1
     local threshold=$2
     (( ${lvl} <= ${threshold} )) && return 1
@@ -185,7 +188,7 @@ __Logging_MsgCat () {
     eval "echo -e -n \"\$Text\\n\"        $Stream"          
 
     # check if file exists
-    [ ! -f "${file}" ] && __Logging.InternalError "file \"${file}\" does not exist" && return 0
+    [ ! -f "${file}" ] && __Logging_LibError "file \"${file}\" does not exist" && return 0
 
     # write to log file
     echo -e -n "$__Logging_ColorInfo" >> "${LOGGING_LOGFILE}" 
@@ -200,62 +203,62 @@ __Logging_MsgCat () {
 
 # public functions
 
-eval "${LOGGING_NAMESPACE:1}DebuggingIsActive() { _Logging.DebuggingIsActive \"\$@\"; }"
-_Logging.DebuggingIsActive () {
+eval "${LOGGING_NAMESPACE:1}DebuggingIsActive() { __Logging_DebuggingIsActive \"\$@\"; }"
+__Logging_DebuggingIsActive () {
     local lvl=$1
 
-    __Logging.IsInactive && return 1
-    __Logging.InsufficientLevel ${lvl} ${LOGGING_DEBUG_LEVEL} && return 1
+    __Logging_IsInactive && return 1
+    __Logging_InsufficientLevel ${lvl} ${LOGGING_DEBUG_LEVEL} && return 1
     return 0
 }
 
-eval "${LOGGING_NAMESPACE:1}DebugMsg() { _Logging.DebugMsg \"\$@\"; }"
-_Logging.DebugMsg () {
+eval "${LOGGING_NAMESPACE:1}DebugMsg() { __Logging_DebugMsg \"\$@\"; }"
+__Logging_DebugMsg () {
     local lvl=$1; local msg=$2
 
-    __Logging.IsInactive && return 0
-    __Logging.InsufficientLevel ${lvl} ${LOGGING_DEBUG_LEVEL} && return 0
+    __Logging_IsInactive && return 0
+    __Logging_InsufficientLevel ${lvl} ${LOGGING_DEBUG_LEVEL} && return 0
 
     __Logging_Msg DEBUG ${lvl} "${msg}"
 }
 
-eval "${LOGGING_NAMESPACE:1}DebugCat() { _Logging.DebugCat \"\$@\"; }"
-_Logging.DebugCat () {
+eval "${LOGGING_NAMESPACE:1}DebugCat() { __Logging_DebugCat \"\$@\"; }"
+__Logging_DebugCat () {
     local lvl=$1; local msg=$2; local file=$3; local source=$4
 
-    __Logging.IsInactive && return 0
-    __Logging.InsufficientLevel ${lvl} ${LOGGING_DEBUG_LEVEL} && return 0
+    __Logging_IsInactive && return 0
+    __Logging_InsufficientLevel ${lvl} ${LOGGING_DEBUG_LEVEL} && return 0
 
     __Logging_MsgCat DEBUG ${lvl} "${msg}" "${file}" "${source}"
 
 }
 
-eval "${LOGGING_NAMESPACE:1}DebugLs() { _Logging.DebugLs \"\$@\"; }"
-_Logging.DebugLs () {
+eval "${LOGGING_NAMESPACE:1}DebugLs() { __Logging_DebugLs \"\$@\"; }"
+__Logging_DebugLs () {
     local lvl=$1; local msg=$2; local dir=$3
 
-    __Logging.IsInactive && return 0
-    __Logging.InsufficientLevel ${lvl} ${LOGGING_DEBUG_LEVEL} && return 0
+    __Logging_IsInactive && return 0
+    __Logging_InsufficientLevel ${lvl} ${LOGGING_DEBUG_LEVEL} && return 0
 
     [ ! -d "${dir}" ] && \
         __Logging_Msg DEBUG ${lvl} "${msg}" && \
-	__Logging.InternalError "directory \"${dir}\" does not exist" && return 0
+	__Logging_LibError "directory \"${dir}\" does not exist" && return 0
 
     local tmp_file=$(mktemp)
     [ ! -f "${tmp_file}" ] && \
-	  __Logging.InternalError "cannot create temp file \"${tmp_file}\"" && return 0
+	__Logging_LibError "cannot create temp file \"${tmp_file}\"" && return 0
 
     ls -laR "${dir}" > "${tmp_file}"
     __Logging_MsgCat DEBUG ${lvl} "${msg}" "${tmp_file}" "${dir}"
     rm -f -- "${tmp_file}"
 }
 
-eval "${LOGGING_NAMESPACE:1}DebugLoggingConfig() { _Logging.DebugLoggingConfig \"\$@\"; }"
-_Logging.DebugLoggingConfig () {
+eval "${LOGGING_NAMESPACE:1}DebugLoggingConfig() { __Logging_DebugLoggingConfig \"\$@\"; }"
+__Logging_DebugLoggingConfig () {
     local lvl=$1
 
-    __Logging.IsInactive && return 0
-    __Logging.InsufficientLevel ${lvl} ${LOGGING_DEBUG_LEVEL} && return 0
+    __Logging_IsInactive && return 0
+    __Logging_InsufficientLevel ${lvl} ${LOGGING_DEBUG_LEVEL} && return 0
 
     __Logging_Msg DEBUG ${lvl} "LOGGING_NAMESPACE       = $LOGGING_NAMESPACE"
     __Logging_Msg DEBUG ${lvl} "LOGGING_LIB_DIRECTORY   = ${LOGGING_LIB_DIRECTORY}"
@@ -272,30 +275,30 @@ _Logging.DebugLoggingConfig () {
 
 # info
 
-eval "${LOGGING_NAMESPACE:1}InfoMsg() { _Logging.InfoMsg \"\$@\"; }"
-_Logging.InfoMsg () {
+eval "${LOGGING_NAMESPACE:1}InfoMsg() { __Logging_InfoMsg \"\$@\"; }"
+__Logging_InfoMsg () {
     local nargs=$#; local lvl=${LOGGING_INFO_STD_LEVEL}; local msg=$1
     ((${nargs} == 2)) && lvl=$1 && msg=$2
 
-    __Logging.IsInactive && return 0
-    __Logging.InsufficientLevel ${lvl} ${LOGGING_INFO_LEVEL} && return 0
+    __Logging_IsInactive && return 0
+    __Logging_InsufficientLevel ${lvl} ${LOGGING_INFO_LEVEL} && return 0
     __Logging_Msg INFO ${lvl} "${msg}"
 }
 
-eval "${LOGGING_NAMESPACE:1}InfoCat() { _Logging.InfoCat \"\$@\"; }"
-_Logging.InfoCat () {
+eval "${LOGGING_NAMESPACE:1}InfoCat() { __Logging_InfoCat \"\$@\"; }"
+__Logging_InfoCat () {
     local nargs=$#; local lvl=${LOGGING_INFO_STD_LEVEL}; local msg=$1; local file=$2
     ((${nargs} == 3)) && lvl=$1 && msg=$2; local file=$2
 
-    __Logging.IsInactive && return 0
-    __Logging.InsufficientLevel ${lvl} ${LOGGING_INFO_LEVEL} && return 0
+    __Logging_IsInactive && return 0
+    __Logging_InsufficientLevel ${lvl} ${LOGGING_INFO_LEVEL} && return 0
     __Logging_MsgCat INFO ${lvl} "${msg}" "${file}"
 }
 
 # warn
 
-eval "${LOGGING_NAMESPACE:1}WarnMsg() { _Logging.WarnMsg \"\$@\"; }"
-_Logging.WarnMsg () {
+eval "${LOGGING_NAMESPACE:1}WarnMsg() { __Logging_WarnMsg \"\$@\"; }"
+__Logging_WarnMsg () {
     local msg=$1
 
     __Logging_Msg WARN 0 "${msg}"
@@ -303,15 +306,15 @@ _Logging.WarnMsg () {
 
 # error
 
-eval "${LOGGING_NAMESPACE:1}ErrorMsg() { _Logging.ErrorMsg \"\$@\"; }"
-_Logging.ErrorMsg () {
+eval "${LOGGING_NAMESPACE:1}ErrorMsg() { __Logging_ErrorMsg \"\$@\"; }"
+__Logging_ErrorMsg () {
     local msg=$1
 
     __Logging_Msg ERROR 0 "${msg}"
 }
 
-eval "${LOGGING_NAMESPACE:1}ErrorCat() { _Logging.ErrorCat \"\$@\"; }"
-_Logging.ErrorCat () {
+eval "${LOGGING_NAMESPACE:1}ErrorCat() { __Logging_ErrorCat \"\$@\"; }"
+__Logging_ErrorCat () {
     local msg=$1; local file=$2
 
     __Logging_MsgCat ERROR 0 "${msg}" "${file}"

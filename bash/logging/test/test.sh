@@ -27,6 +27,8 @@ source subscript.sh
 # main
 USAGE="[ -I LOGGING_INFO_LEVEL -D LOGGING_DEBUG_LEVEL -L LOGGING_LOGFILE ]"
 Options.ParseOptions "${USAGE}" ${@}
+# log library errors to app log file
+CORE_LOGFILE="${LOGGING_LOGFILE}"
 
 DebugLoggingConfig 9
 
