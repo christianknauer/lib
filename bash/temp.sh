@@ -41,22 +41,24 @@ eval "${TEMP_NAMESPACE:1}CreateTempDir() { __Temp_CreateTempDir \"\$@\"; }"
 __Temp_CreateTempDir () {
 
     # create temporary directory and store its name in a variable.
-    retval=$(mktemp -d)
+    tempd=$(mktemp -d)
 
     # check if the temp directory was created successfully.
-    [ ! -e "${retval}" ] && retval="failed to create temporary directory" && return 1
+    [ ! -e "${tempd}" ] && retval="failed to create temporary directory" && return 1
 
     # make sure the temp directory is in /tmp.
-    [[ ! "${retval}" = /tmp/* ]] && retval="temporary directory not in /tmp" && return 1
+    [[ ! "${tempd}" = /tmp/* ]] && retval="temporary directory not in /tmp" && return 1
 
 #    # make sure the temp directory gets removed on script exit.
 #    trap "exit 1" HUP INT PIPE QUIT TERM
 #    #trap "__Temp_CleanupTempOnExit \"${retval}\"" EXIT
 #    trap "__Temp_CleanupTempOnExit" EXIT
 
-    DebugMsg 3 "created temporary directory \"${retval}\""
+    DebugMsg 3 "created temporary directory \"${tempd}\""
 
-    __TEMP_LIST_OF_TEMP_DIRS="${__TEMP_LIST_OF_TEMP_DIRS} \"${retval}\""
+    __TEMP_LIST_OF_TEMP_DIRS="${__TEMP_LIST_OF_TEMP_DIRS} \"${tempd}\""
+
+    retval=${tempd}
     return 0
 }
 
