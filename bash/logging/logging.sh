@@ -38,8 +38,9 @@ LOGGING_LOGFILE="${LOGGING_LOGFILE:=/dev/null}"
 eval "__Logging_LibError () { ${CORE_NAMESPACE:1}LibError \"\$@\"; }"
 
 # checks
+[ ! -z "${LOGGING_ISLOADED}" ] && __Logging_LibError "FATAL: logging module already loaded (namespace ${LOGGING_NAMESPACE})" && exit 1
 # module directory
-[ ! -e "${LOGGING_LIB_DIRECTORY}" ] && __Logging_LibError "logging lib directory \"${LOGGING_LIB_DIRECTORY}\" does not exist" && exit 1
+[ ! -e "${LOGGING_LIB_DIRECTORY}" ] && __Logging_LibError "FATAL: logging lib directory \"${LOGGING_LIB_DIRECTORY}\" does not exist" && exit 1
 
 # load additional library files
 
@@ -283,7 +284,7 @@ __Logging_DebugLoggingConfig () {
     __Logging_Msg DEBUG ${lvl} "LOGGING_LIB_DIRECTORY   = ${LOGGING_LIB_DIRECTORY}"
     __Logging_Msg DEBUG ${lvl} "LOGGING_STYLE           = $LOGGING_STYLE"
     __Logging_Msg DEBUG ${lvl} "LOGGING_INFO_STD_LEVEL  = $LOGGING_INFO_STD_LEVEL"
-    __Logging_Msg DEBUG ${lvl} "LOGGING_DEBUG_STD_LEVEL = $LOGGING_DEBUG_DEFAULT_LEVE"
+    __Logging_Msg DEBUG ${lvl} "LOGGING_DEBUG_STD_LEVEL = $LOGGING_DEBUG_STD_LEVEL"
     __Logging_Msg DEBUG ${lvl} "LOGGING_INFO_LEVEL      = $LOGGING_INFO_LEVEL"
     __Logging_Msg DEBUG ${lvl} "LOGGING_DEBUG_LEVEL     = $LOGGING_DEBUG_LEVEL"
     __Logging_Msg DEBUG ${lvl} "LOGGING_SCRIPTS         = $LOGGING_SCRIPTS"
@@ -338,5 +339,7 @@ __Logging_ErrorCat () {
 
     __Logging_MsgCat ERROR 0 "${msg}" "${file}"
 }
+
+LOGGING_ISLOADED="yes"
 
 # EOF
