@@ -7,13 +7,12 @@
 # core
 [ -z "${CORE_ISLOADED}" ] && echo -e "FATAL ERROR temp module ($(basename $0)): core module not loaded" >&2 && exit 1
 # import LibError from core module as __Temp_LibError
-eval "__Temp_LibError () { ${CORE_NAMESPACE:1}LibError \"\$@\"; }"
-
-# logging
-[ -z "${LOGGING_ISLOADED}" ] && __Temp_LibError "FATAL: logging module not loaded" && exit 1
+#eval "__Temp_LibError () { __Core_LibError \"\$@\"; }"
+# import LibDebug from core module as __Temp_LibDebug
+#eval "__Temp_LibDebug () { __Core_LibDebug \"\$@\"; }"
 
 # module can only be loaded once
-[ ! -z "${TEMP_ISLOADED}" ] && __Temp_LibError "FATAL: temp module already loaded (namespace ${TEMP_NAMESPACE})" && exit 1
+[ ! -z "${TEMP_ISLOADED}" ] && __Core_LibError "FATAL: temp module already loaded (namespace ${TEMP_NAMESPACE})" && exit 1
 
 # module options
 
@@ -28,10 +27,7 @@ __TEMP_LIST_OF_TEMP_DIRS=""
 # private functions
 
 __Temp_CleanupTempOnExit () {
-    #local TEMPD=$1
-    #echo "${__TEMP_LIST_OF_TEMP_DIRS}"
-    #DebugMsg 3 "removing temporary directory \"${TEMPD}\""; rm -rf "${TEMPD}"
-    DebugMsg 3 "removing temporary directories ${__TEMP_LIST_OF_TEMP_DIRS}"
+    __Core_LibDebug "removing temporary directories ${__TEMP_LIST_OF_TEMP_DIRS}"
     eval "rm -rf ${__TEMP_LIST_OF_TEMP_DIRS}"
 }
 
@@ -46,17 +42,12 @@ __Temp_CreateTempDir () {
     # check if the temp directory was created successfully.
     [ ! -e "${tempd}" ] && retval="failed to create temporary directory" && return 1
 
+    __TEMP_LIST_OF_TEMP_DIRS="${__TEMP_LIST_OF_TEMP_DIRS} \"${tempd}\""
+
     # make sure the temp directory is in /tmp.
     [[ ! "${tempd}" = /tmp/* ]] && retval="temporary directory not in /tmp" && return 1
 
-#    # make sure the temp directory gets removed on script exit.
-#    trap "exit 1" HUP INT PIPE QUIT TERM
-#    #trap "__Temp_CleanupTempOnExit \"${retval}\"" EXIT
-#    trap "__Temp_CleanupTempOnExit" EXIT
-
-    DebugMsg 3 "created temporary directory \"${tempd}\""
-
-    __TEMP_LIST_OF_TEMP_DIRS="${__TEMP_LIST_OF_TEMP_DIRS} \"${tempd}\""
+    __Core_LibDebug "created temporary directory \"${tempd}\""
 
     retval=${tempd}
     return 0

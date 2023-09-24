@@ -28,26 +28,28 @@ LOGGING_LOGFILE="${LOGGING_LOGFILE:=/dev/null}"
 # initialize library
 
 # checks
+
+# check for lib directory
 [ -z "${LIB_DIRECTORY}" ] && echo -e "FATAL ERROR logging module ($(basename $0)): LIB_DIRECTORY is not defined" >&2 && exit 1
+
+# core module
+# check for core module
 [ ! -f "${LIB_DIRECTORY}/core.sh" ] && echo -e "FATAL ERROR logging module ($(basename $0)): core.sh not found in \"${LIB_DIRECTORY}\"" >&2 && exit 1
-# load core (if not already loaded)
+# load core module (if not already loaded)
 [ -z "${CORE_NAMESPACE}" ] && source "${LIB_DIRECTORY}/core.sh"
+# import LibError from lib module as __Logging_LibError
+#eval "__Logging_LibError () { __Core_LibError \"\$@\"; }"
 
-# imports
-# import LibError from lib as __Logging_LibError
-eval "__Logging_LibError () { ${CORE_NAMESPACE:1}LibError \"\$@\"; }"
-
-# checks
-[ ! -z "${LOGGING_ISLOADED}" ] && __Logging_LibError "FATAL: logging module already loaded (namespace ${LOGGING_NAMESPACE})" && exit 1
-# module directory
-[ ! -e "${LOGGING_LIB_DIRECTORY}" ] && __Logging_LibError "FATAL: logging lib directory \"${LOGGING_LIB_DIRECTORY}\" does not exist" && exit 1
+# check for repeated initialization
+[ ! -z "${LOGGING_ISLOADED}" ] && __Core_LibError "FATAL: logging module already loaded (namespace ${LOGGING_NAMESPACE})" && exit 1
+# check module directory
+[ ! -e "${LOGGING_LIB_DIRECTORY}" ] && __Core_LibError "FATAL: logging lib directory \"${LOGGING_LIB_DIRECTORY}\" does not exist" && exit 1
 
 # load additional library files
-
 # colors 
 source "${LOGGING_LIB_DIRECTORY}/_colors.sh"
 
-# load required modules
+# load other required modules
 
 # global variables
 
@@ -208,7 +210,7 @@ __Logging_MsgCat () {
     eval "echo -e -n \"\$Text\\n\"        $Stream"          
 
     # check if file exists
-    [ ! -f "${file}" ] && __Logging_LibError "file \"${file}\" does not exist" && return 0
+    [ ! -f "${file}" ] && __Core_LibError "file \"${file}\" does not exist" && return 0
 
     # write to log file
     echo -e -n "$__Logging_ColorInfo" >> "${LOGGING_LOGFILE}" 
@@ -262,11 +264,11 @@ __Logging_DebugLs () {
 
     [ ! -d "${dir}" ] && \
         __Logging_Msg DEBUG ${lvl} "${msg}" && \
-	__Logging_LibError "directory \"${dir}\" does not exist" && return 0
+	__Core_LibError "directory \"${dir}\" does not exist" && return 0
 
     local tmp_file=$(mktemp)
     [ ! -f "${tmp_file}" ] && \
-	__Logging_LibError "cannot create temp file \"${tmp_file}\"" && return 0
+	__Core_LibError "cannot create temp file \"${tmp_file}\"" && return 0
 
     ls -laR "${dir}" > "${tmp_file}"
     __Logging_MsgCat DEBUG ${lvl} "${msg}" "${tmp_file}" "${dir}"
