@@ -50,6 +50,8 @@ source "${LOGGING_LIB_DIRECTORY}/_colors.sh"
 
 # global variables
 
+__LOGGING_LAST_LEVEL=5
+
 # global constants
 
 # colors
@@ -65,11 +67,16 @@ __Logging_ColorDebug=$(__Colors_GetColor Purple)
 __Logging_Stream () {
     local type=$1
     local retval=""
-    if [ "${type}" == "ERROR" ]; then
-	retval=">&2"
-    elif [ "${type}" == "WARN" ]; then
+
+    if [[ "${type}" == "ERROR" || "${type}" == "WARN" ]]; then
 	retval=">&2"
     fi
+    #if [ "${type}" == "ERROR" ]; then
+#	retval=">&2"
+#    elif [ "${type}" == "WARN" ]; then
+#	retval=">&2"
+#    fi
+
     echo "${retval}"
 #    # redirect to stderr
 #    [ "${type}" == "ERROR" ] && echo '>&2' && return 0    
@@ -77,7 +84,6 @@ __Logging_Stream () {
 #    echo ""
 }
 
-__LOGGING_LAST_LEVEL=5
 __Logging_FormatFunction () {
     local type=$1
     local func=$2
@@ -85,10 +91,14 @@ __Logging_FormatFunction () {
     local retval=" ${func}"
 
     local cEmptyLine="                                      "
-    local Callsymbol="\ue0b0" # arrow
-    local Callsymbol="\u2517" # arrow
-    #echo -n "$depth - $__LOGGING_LAST_LEVEL" >&2
-    [ ${depth} -eq ${__LOGGING_LAST_LEVEL} ] && Callsymbol=" "
+    local cCall="\u2517"
+    local cRet=" "
+    local cSeq=" "
+
+    local Callsymbol="${cCall}"
+
+    [ ${depth} -eq ${__LOGGING_LAST_LEVEL} ] && Callsymbol="${cSeq}"
+    [ ${depth} -lt ${__LOGGING_LAST_LEVEL} ] && Callsymbol="${cRet}"
     [ ${depth} -eq 5 ] && Callsymbol=" "
   
     if [[ "${type}" == "INFO" || "${type}" == "DEBUG" ]]; then
@@ -102,10 +112,13 @@ __Logging_FormatLevel () {
     local lvl=$2
     local retval=""
     if [ "${type}" == "INFO" ]; then
-	retval=" (${lvl}/${LOGGING_INFO_LEVEL})"
+	retval="(${lvl}/${LOGGING_INFO_LEVEL})"
     elif [ "${type}" == "DEBUG" ]; then
-	retval=" (${lvl}/${LOGGING_DEBUG_LEVEL})"
+	retval="(${lvl}/${LOGGING_DEBUG_LEVEL})"
+    else
+        echo "${retval}"; return 0
     fi
+    retval=$(printf ' %-7s' "${retval}")
     echo "${retval}"
 }
 
@@ -145,7 +158,10 @@ __Logging_FormatMsg () {
 
     [ "${Time}" != "" ] && Time=" ${Time}"
 
-    echo "[${Color}${Type}${__Logging_ColorOff}${Level}${Time}${cWhite}${Func} (${Source}:${LineNo})${__Logging_ColorOff}] ${msg}" 
+    __LOGGING_LAST_LEVEL=$Depth
+
+    retval="[${Color}${Type}${__Logging_ColorOff}${Level}${Time}${cWhite}${Func} (${Source}:${LineNo})${__Logging_ColorOff}] ${msg}" 
+    #echo "[${Color}${Type}${__Logging_ColorOff}${Level}${Time}${cWhite}${Func} (${Source}:${LineNo})${__Logging_ColorOff}] ${msg}" 
 }
 
 __Logging_IsInactive () {
@@ -167,10 +183,11 @@ __Logging_InsufficientLevel () {
 __Logging_Msg () {
     local type=$1; local lvl=$2; local msg=$3
 
-    local Text=$(__Logging_FormatMsg "${type}" ${lvl} "${msg}")
+    #local Text=$(__Logging_FormatMsg "${type}" ${lvl} "${msg}")
+    __Logging_FormatMsg "${type}" ${lvl} "${msg}"; local Text=${retval}
     local Stream=$(__Logging_Stream "${type}")
-    local Depth=${#FUNCNAME[@]}; ((Depth++))
-    __LOGGING_LAST_LEVEL=$Depth
+    #local Depth=${#FUNCNAME[@]}; ((Depth++))
+    #__LOGGING_LAST_LEVEL=$Depth
 
     echo -e "${Text}" >> "${LOGGING_LOGFILE}"
     eval "echo -e \"\$Text\" $Stream"
@@ -181,7 +198,8 @@ __Logging_MsgCat () {
     local file=$4; local source=$5; [ "${source}" == "" ] && source="${file}"
 
     local Stream=$(__Logging_Stream "${type}")
-    local Text=$(__Logging_FormatMsg "${type}" ${lvl} "(content of \"${source}\") ${msg}")
+    #local Text=$(__Logging_FormatMsg "${type}" ${lvl} "(content of \"${source}\") ${msg}")
+    __Logging_FormatMsg "${type}" ${lvl} "(content of \"${source}\") ${msg}"; local Text=${retval}
 
     # write to log file & stream
     echo -e -n "${Text}\n"            >> "${LOGGING_LOGFILE}" 

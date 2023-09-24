@@ -32,10 +32,17 @@ CORE_LOGFILE="${LOGGING_LOGFILE}"
 
 DebugLoggingConfig 9
 
+TestFn4 () {
+	InfoMsg "inside info"
+}
+
+
 TestFn2 () {
 	InfoMsg "inside info"
         TestFn3
-        TestFn3
+        TestFn4
+        TestFn4
+        TestFn4
         DebugMsg 1 "inside debug"
 }
 
@@ -60,6 +67,7 @@ else
   InfoMsg "debugging is not active"
 fi
 TestFn
+TestFn4
 
 exit 0
 
