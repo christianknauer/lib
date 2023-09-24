@@ -68,6 +68,11 @@ else
 fi
 TestFn
 TestFn4
+InfoMsg 99 "info lvl 99"
+DebugMsg 99 "debug lvl 99"
+
+__Core_CheckBinaries cat openssl find; ec=$?; missing=${retval}
+[ ! $ec -eq 0 ] && ErrorMsg "the following binaries are missing: ${missing}" # && exit 1
 
 exit 0
 

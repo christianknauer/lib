@@ -112,13 +112,15 @@ __Logging_FormatLevel () {
     local lvl=$2
     local retval=""
     if [ "${type}" == "INFO" ]; then
-	retval="(${lvl}/${LOGGING_INFO_LEVEL})"
+#	retval="-${lvl}/${LOGGING_INFO_LEVEL}"
+	retval=" (${lvl})"
     elif [ "${type}" == "DEBUG" ]; then
-	retval="(${lvl}/${LOGGING_DEBUG_LEVEL})"
+#	retval="-${lvl}/${LOGGING_DEBUG_LEVEL}"
+	retval=" (${lvl})"
     else
         echo "${retval}"; return 0
     fi
-    retval=$(printf ' %-7s' "${retval}")
+#    retval=$(printf ' %7s' "${retval}")
     echo "${retval}"
 }
 
@@ -161,7 +163,6 @@ __Logging_FormatMsg () {
     __LOGGING_LAST_LEVEL=$Depth
 
     retval="[${Color}${Type}${__Logging_ColorOff}${Level}${Time}${cWhite}${Func} (${Source}:${LineNo})${__Logging_ColorOff}] ${msg}" 
-    #echo "[${Color}${Type}${__Logging_ColorOff}${Level}${Time}${cWhite}${Func} (${Source}:${LineNo})${__Logging_ColorOff}] ${msg}" 
 }
 
 __Logging_IsInactive () {
