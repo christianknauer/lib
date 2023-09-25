@@ -36,7 +36,7 @@ LOGGING_LOGFILE="${LOGGING_LOGFILE:=/dev/null}"
 # check for core module
 [ ! -f "${LIB_DIRECTORY}/core.sh" ] && echo -e "FATAL ERROR logging module ($(basename $0)): core.sh not found in \"${LIB_DIRECTORY}\"" >&2 && exit 1
 # load core module (if not already loaded)
-[ -z "${CORE_NAMESPACE}" ] && source "${LIB_DIRECTORY}/core.sh"
+[ -z "${CORE_ISLOADED}" ] && source "${LIB_DIRECTORY}/core.sh"
 # import LibError from lib module as __Logging_LibError
 #eval "__Logging_LibError () { __Core_LibError \"\$@\"; }"
 
