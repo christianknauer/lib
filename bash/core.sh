@@ -1,6 +1,6 @@
 # file: core.sh
 
-# requirements: basename
+# requirements: basename, cat
 
 # checks
 
@@ -14,10 +14,21 @@ CORE_DEBUG="${CORE_DEBUG:=}"
 # global variables
 
 __CORE_LIST_OF_TEMP_DIRS=""
+__CORE_LIST_OF_FUSE_MOUNTS=""
 
 # private functions
 
-__Core_CleanupTempOnExitP () {
+__Core_CleanupOnExitP () {
+    __Core_FuseUnmountOnExitP
+    __Core_RemoveTempOnExitP
+}
+
+__Core_FuseUnmountOnExitP () {
+    __Core_LibDebug "unmounting ${__CORE_LIST_OF_FUSE_MOUNTS}"
+    eval "${__CORE_LIST_OF_FUSE_MOUNTS}"
+}
+
+__Core_RemoveTempOnExitP () {
     __Core_LibDebug "removing temporary directories ${__CORE_LIST_OF_TEMP_DIRS}"
     eval "rm -rf ${__CORE_LIST_OF_TEMP_DIRS}"
 }
@@ -65,38 +76,92 @@ __Core_CheckBinaries () {
     return 0
 }
 
-# create directory in /tmp that will be removed on script exit
+__Core_CreateEncryptedTempDir () {
+    local password=$1
+
+    [ -z ${password} ] && password=$(cat /dev/urandom | tr -dc '[:alnum:]' | head -c 64)
+
+    __Core_CreateTempDir; local ec=$?; local Tempd=$retval
+    [ ! $ec -eq 0 ] &&  __Core_LibError "$errval" && exit $ec
+
+    local CipherDir=$(mktemp -d -p ${Tempd})
+    [ ! -e "${CipherDir}" ] && errval="failed to create temporary cipher directory" && return 1
+    local PlainDir=$(mktemp -d -p ${Tempd})
+    [ ! -e "${PlainDir}" ] && errval="failed to create temporary encrypted directory" && return 1
+    
+    gocryptfs -extpass echo -extpass "${password}" -init "${CipherDir}" > /dev/null; ec=$?
+    [ ! $ec -eq 0 ] &&  __Core_LibError "gocryptfs init failed" && exit $ec
+    gocryptfs -extpass echo -extpass "${password}" "${CipherDir}" "${PlainDir}" > /dev/null; ec=$?
+    [ ! $ec -eq 0 ] &&  __Core_LibError "gocryptfs mount failed" && exit $ec
+
+    __CORE_LIST_OF_FUSE_MOUNTS="${__CORE_LIST_OF_FUSE_MOUNTS}fusermount -u \"${PlainDir}\"; "
+
+    local MasterKeyFile=$(mktemp -p ${Tempd})
+    [ ! -e "${PlainDir}" ] && errval="failed to create temporary master key file" && return 1
+    echo "${password}" | gocryptfs-xray -dumpmasterkey "${CipherDir}/gocryptfs.conf" > "${MasterKeyFile}"; ec=$?
+    [ ! $ec -eq 0 ] &&  __Core_LibError "gocryptfs master key export failed" && exit $ec
+    local MasterKey=$(cat "${MasterKeyFile}")
+    rm -rf ${MasterKeyFile}
+
+    __Core_LibDebug "created encrypted temporary directory \"${PlainDir}\""
+
+    retval="${PlainDir}"
+    retval1="${CipherDir}"
+    retval2="${password}"
+    retval3="${MasterKey}"
+
+    return 0
+}
+
+
+# create directory in [base] that will be removed on script exit
+# [base] must be a subdirectory of /tmp
 #
-# returns 0 if the directory was created successfully in /tmp
+# returns 0 if the directory was created successfully in [base]
 #           [retval] contains the name of the directory
 # returns 1 if the directory could not be created in /tmp
 #           [errval] contains the error message
 
 __Core_CreateTempDir () {
+    base=$1
     retval=""; errval=""
 
+    [ -z ${base} ] && base="/tmp"
+
     # create temporary directory and store its name in a variable.
-    tempd=$(mktemp -d)
+    Tempd=$(mktemp -d -p "${base}")
 
     # check if the temp directory was created successfully.
-    [ ! -e "${tempd}" ] && errval="failed to create temporary directory" && return 1
+    [ ! -e "${Tempd}" ] && errval="failed to create temporary directory" && return 1
 
-    __CORE_LIST_OF_TEMP_DIRS="${__CORE_LIST_OF_TEMP_DIRS} \"${tempd}\""
+    __CORE_LIST_OF_TEMP_DIRS="${__CORE_LIST_OF_TEMP_DIRS} \"${Tempd}\""
 
     # make sure the temp directory is in /tmp.
-    [[ ! "${tempd}" = /tmp/* ]] && errval="temporary directory not in /tmp" && return 1
+    [[ ! "${Tempd}" = /tmp/* ]] && errval="temporary directory not in /tmp" && return 1
 
-    __Core_LibDebug "created temporary directory \"${tempd}\""
+    __Core_LibDebug "created temporary directory \"${Tempd}\""
 
-    retval="${tempd}"
+    retval="${Tempd}"
     return 0
+}
+
+# render a template file: expand variables + preserve formatting
+#
+# template.txt:
+# Username: ${user}
+#
+# use as follows:
+# user="Gregory"; __Core_RenderTemplate /path/to/template.txt > path/to/expanded_file
+
+__Core_RenderTemplate() {
+    eval "echo \"$(cat $1)\""
 }
 
 # module init code
 
 # make sure the temp directories get removed on script exit
 trap "exit 1" HUP INT PIPE QUIT TERM
-trap "__Core_CleanupTempOnExitP" EXIT
+trap "__Core_CleanupOnExitP" EXIT
  
 CORE_ISLOADED="yes"
 
