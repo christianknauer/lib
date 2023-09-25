@@ -82,27 +82,29 @@ __Core_CreateEncryptedTempDir () {
     [ -z ${password} ] && password=$(cat /dev/urandom | tr -dc '[:alnum:]' | head -c 64)
 
     __Core_CreateTempDir; local ec=$?; local Tempd=$retval
-    [ ! $ec -eq 0 ] &&  __Core_LibError "$errval" && exit $ec
+    [ ! $ec -eq 0 ] && return $ec
 
     local CipherDir=$(mktemp -d -p ${Tempd})
     [ ! -e "${CipherDir}" ] && errval="failed to create temporary cipher directory" && return 1
     local PlainDir=$(mktemp -d -p ${Tempd})
-    [ ! -e "${PlainDir}" ] && errval="failed to create temporary encrypted directory" && return 1
+    [ ! -e "${PlainDir}" ] && errval="failed to create temporary plain directory" && return 1
     
     gocryptfs -extpass echo -extpass "${password}" -init "${CipherDir}" > /dev/null; ec=$?
-    [ ! $ec -eq 0 ] &&  __Core_LibError "gocryptfs init failed" && exit $ec
+    [ ! $ec -eq 0 ] &&  errval="gocryptfs init failed" && return $ec
     gocryptfs -extpass echo -extpass "${password}" "${CipherDir}" "${PlainDir}" > /dev/null; ec=$?
-    [ ! $ec -eq 0 ] &&  __Core_LibError "gocryptfs mount failed" && exit $ec
+    [ ! $ec -eq 0 ] &&  errval="gocryptfs mount failed" && return $ec
 
     __CORE_LIST_OF_FUSE_MOUNTS="${__CORE_LIST_OF_FUSE_MOUNTS}fusermount -u \"${PlainDir}\"; "
 
     local MasterKeyFile=$(mktemp -p ${Tempd})
     [ ! -e "${PlainDir}" ] && errval="failed to create temporary master key file" && return 1
     echo "${password}" | gocryptfs-xray -dumpmasterkey "${CipherDir}/gocryptfs.conf" > "${MasterKeyFile}"; ec=$?
-    [ ! $ec -eq 0 ] &&  __Core_LibError "gocryptfs master key export failed" && exit $ec
+    [ ! $ec -eq 0 ] &&  errval="gocryptfs master key export failed" && return $ec
     local MasterKey=$(cat "${MasterKeyFile}")
-    rm -rf ${MasterKeyFile}
+    rm -f ${MasterKeyFile}
 
+    # CAVE: it might not be safe to remove the config file!!
+    rm -f "${CipherDir}/gocryptfs.conf" 
     __Core_LibDebug "created encrypted temporary directory \"${PlainDir}\""
 
     retval="${PlainDir}"

@@ -52,12 +52,17 @@ CipherDir="${retval1}"
 Password="${retval2}"
 MasterKey="${retval3}"
 
-touch "${PlainDir}"/test1.txt
-touch "${PlainDir}"/test2.txt
-
 DebugLs 1 "Cipher dir:" "${CipherDir}" 
 DebugLs 1 "Plain dir:" "${PlainDir}" 
 DebugMsg 1 "Password: ${Password}"
 DebugMsg 1 "Master key: ${MasterKey}"
+
+echo "test1" > "${PlainDir}"/test1.txt
+echo "test2" > "${PlainDir}"/test2.txt
+
+DebugLs 1 "Plain dir:" "${PlainDir}" 
+
+DebugCat 1 "test1.txt" "${PlainDir}"/test1.txt
+DebugCat 1 "test2.txt" "${PlainDir}"/test2.txt
 
 # EOF
