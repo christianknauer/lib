@@ -35,29 +35,23 @@ source "${SACRYPT_LIB_DIRECTORY}/sacrypt.sh"; ec=$?
 sacrypt_SourceSAEFile ${INITFILE}
 
 [ "${INFILE}" == "" ] && INFILE="/dev/stdin"
-[ ! "${INFILE}" == "/dev/stdin" ] && [ "${OUTFILE}" == "" ] && OUTFILE="$INFILE.${SACRYPT_ENC_EXT}"
-[ ! "${INFILE}" == "/dev/stdin" ] && [ "${CHKFILE}" == "" ] && CHKFILE="$INFILE.${SACRYPT_CHK_EXT}"
-[ ! "${INFILE}" == "/dev/stdin" ] && [ "${PKHFILE}" == "" ] && PKHFILE="$INFILE.${SACRYPT_KEY_EXT}"
-#[ ! "${INFILE}" == "/dev/stdin" ] && [ "${AESHFILE}" == "" ] && AESHFILE="$INFILE.${SACRYPT_AES_EXT}"
-[ ! "${INFILE}" == "/dev/stdin" ] && [ "${PKGFILE}" == "" ] && PKGFILE="$INFILE.${SACRYPT_PKG_EXT}"
+if [[ "${INFILE}" == *.${SACRYPT_ENC_EXT} ]]; then
+	OUTNAME=${INFILE%".${SACRYPT_ENC_EXT}"}
+	[ ! -f "${OUTNAME}" ] && [ "${OUTFILE}" == "" ] && OUTFILE="${OUTNAME}"
+	[ "${CHKFILE}" == "" ] && CHKFILE="${OUTNAME}.${SACRYPT_CHK_EXT}"
+#        [ "${PUBKEYFILE}" == "" ] && PUBKEYFILE="${OUTNAME}.${SACRYPT_KEY_EXT}"
+fi
+[ ! "${INFILE}" == "/dev/stdin" ] && [ "${OUTFILE}" == "" ] && OUTFILE="$INFILE.${SACRYPT_DEC_EXT}"
 [ "${CHKFILE}" == "" ] && CHKFILE="message.${SACRYPT_CHK_EXT}"
-[ "${PKHFILE}" == "" ] && PKHFILE="message.${SACRYPT_KEY_EXT}"
-[ "${PKGFILE}" == "" ] && PKGFILE="message.${SACRYPT_PKG_EXT}"
+[ ! -f "${CHKFILE}" ] && CHKFILE=""
 
-DebugMsg 3 "reading raw data from \"$INFILE\""
-DebugMsg 3 "writing encrypted data to \"$OUTFILE\""
-DebugMsg 3 "writing checksum to \"$CHKFILE\""
-DebugMsg 3 "writing public key hash to \"$PKHFILE\""
+DebugMsg 3 "reading encrypted input data from \"$INFILE\""
+DebugMsg 3 "writing raw data to \"$OUTFILE\""
+DebugMsg 3 "reading checksum from \"$CHKFILE\""
 
-# create temp files
-
-RAWFILE=$(mktemp -p ${SACRYPT_TEMPD})
-[ ! -e "$RAWFILE" ] && ErrorMsg "failed to create temp raw file" && exit 1
-DebugMsg 3 "using \"$RAWFILE\" as temp raw file"
-
-ENCFILE=$(mktemp -p ${SACRYPT_TEMPD})
-[ ! -e "$ENCFILE" ] && ErrorMsg "failed to create temp enc file" && exit 1
-DebugMsg 3 "using \"$ENCFILE\" as temp enc file"
+DECFILE=$(mktemp -p ${SACRYPT_TEMPD})
+[ ! -e "$DECFILE" ] && ErrorMsg "failed to create temp dec file" && exit 1
+DebugMsg 3 "using \"$DECFILE\" as temp dec file"
 
 # determine password
 sacrypt_DeterminePassword "${PASSWORD}"; ec=$?; PASSWORD=$retval
@@ -66,33 +60,42 @@ sacrypt_DeterminePassword "${PASSWORD}"; ec=$?; PASSWORD=$retval
 # determine encryption key specification
 sacrypt_DetermineKey "${PUBKEYFILE}"; ec=$?; KEYSPEC=$retval
 [ ! $ec -eq 0 ] &&  ErrorMsg "$retval" && exit $ec
+DebugMsg 1 "key spec is ${KEYSPEC}"
 
-# read input file 
-[ ! -e "$INFILE" ] && ErrorMsg "input file \"$INFILE\" cannot be opened" && exit 1
-cat "${INFILE}" > "${RAWFILE}"
+if [ ! "${KEYSPEC}" == "" ]; then
+    # find the encryption key in the agent 
+    sacrypt_FindKeyInAgent ${KEYSPEC}; ec=$?  
+    [ ! $ec -eq 0 ] && ErrorMsg "$retval" && exit $ec
+    KEYINDEX=$retval
+    KEYHASH=$retval1
+    DebugMsg 1 "key ${KEYHASH} found in agent (#${KEYINDEX})"
+else
+    DebugMsg 1 "no key specified, agent not asked"
+fi
 
-# encrypt the file
-sacrypt_EncryptFile "${RAWFILE}" "${ENCFILE}" "${KEYSPEC}" "${PASSWORD}"; ec=$?; KEYHASH=$retval
+# decrypt the file
+sacrypt_DecryptFile "${INFILE}" "${DECFILE}" "${KEYSPEC}" "${PASSWORD}"; ec=$?
 [ ! $ec -eq 0 ] && ErrorMsg "$retval" && exit $ec
+DebugMsg 1 "decryption ok"
 
-DebugMsg 1 "encryption ok"
+# verify decryption
+if [ "${CHKFILE}" == "" ]; then
+    DebugMsg 1 "no checksum data available, verification skipped"
+else
+    DebugMsg 1 "reading checksum from \"${CHKFILE}\""
+    sacrypt_VerifyFileChecksum "${DECFILE}" "${CHKFILE}"; ec=$?
+    [ ! $ec -eq 0 ] && ErrorMsg "$retval" && exit $ec
+    DebugMsg 1 "checksum verification passed"
+fi
 
 # create output
 if [ "${OUTFILE}" == "" ]; then
-    cat "${ENCFILE}" 
+    cat "${DECFILE}" 
     DebugMsg 1 "output sent to STDOUT"
 else
-    cp "${ENCFILE}" "${OUTFILE}"
+    cp "${DECFILE}" "${OUTFILE}"
     DebugMsg 1 "output written to \"${OUTFILE}\""
 fi
-
-# create checksum file
-sacrypt_FileHash "${RAWFILE}" > "${CHKFILE}"
-DebugMsg 1 "checksum written to \"${CHKFILE}\""
-
-# create key file
-echo -n "${KEYHASH}" > "${PKHFILE}"
-DebugMsg 1 "key hash written to \"${PKHFILE}\""
 
 exit 0
 

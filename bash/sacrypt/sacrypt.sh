@@ -24,8 +24,8 @@ SACRYPT_DECRYPT_EXE="sshcrypt-agent-decrypt"
 # file extensions
 SACRYPT_DEC_EXT="dec" # decrypted data
 SACRYPT_ENC_EXT="sae" # encrypted data
-SACRYPT_KEY_EXT="sak" # public key hash
-SACRYPT_CHK_EXT="sac" # raw data hash
+SACRYPT_KEY_EXT="sak" # key hash
+SACRYPT_CHK_EXT="sac" # raw data checksum 
 
 # default aes keys
 SACRYPT_AES_KEY="${SACRYPT_AES_KEY:=jTx8I33DeeSuwIbwizOvXzwep7hZu8Fq4qR1eSnLgiUXPHPwnmxMPiouFi8ey0sXsap}"
@@ -112,7 +112,7 @@ __sacrypt_ParseSAEFileSpec () {
 	    
 	DebugMsg 3 "${SACRYPT_ENC_EXT}-file \"${FileName}\" specified with key spec \"${KeySpec}\" and password \"${Password}\""
 
-	retval=$F{ileName}
+	retval=${FileName}
 	retval1=${KeySpec}
 	retval2=${Password}
 	return 0
@@ -201,16 +201,15 @@ sacrypt_DeterminePassword () {
 }
 
 sacrypt_DetermineKey () {
-    retval=""
     local keyspec=$1
 
     # no key specified 
-    [ "${keyspec}" == "" ] && return 0
+    [ "${keyspec}" == "" ] && retval="" && return 0
 
     # key specified is a hash
     if [ ! -e "${keyspec}" ]; then
         DebugMsg 1 "key spec \"${keyspec}\" is not a file"
-	retval=$keyspec
+	retval=${keyspec}
 	return 0
     fi
 
@@ -230,15 +229,15 @@ sacrypt_DetermineKey () {
     # read first line of file
     local KeyType 
     local RestOfLine 
-    read KeyType RestOfLine < ${PUBKEYFILE} 
-    local PublicKey=${RestOfLine%% *}
-    local PublicKeyHash=$(sacrypt_StringHash $PublicKey)
-    if [[ $KeyType = ssh-rsa ]]; then
-        DebugMsg 3 "using ssh-rsa public key $PublicKeyHash"
-        retval=$PublicKeyHash
+    read KeyType RestOfLine < ${keyspec} 
+    local Key=${RestOfLine%% *}
+    local KeyHash=$(sacrypt_StringHash ${Key})
+    if [[ ${KeyType} = ssh-rsa ]]; then
+        DebugMsg 3 "using ssh-rsa public key ${KeyHash}"
+        retval=${KeyHash}
 	return 0
     else 
-        retval="key ($PublicKeyHash) is not an RSA key" 
+        retval="key (${KeyHash}) is not an RSA key" 
 	return 1
     fi
 }
@@ -311,19 +310,19 @@ sacrypt_FileHash () {
 
 sacrypt_VerifyFileChecksum () {
     local infile=$1
-    local CHKFILE=$2
+    local chksumfile=$2
 
     retval="checksum verification passed"
 
-    [ ! -e "$infile" ] && retval="input file \"${infile}\"does not exist" && return 1
-    [ ! -e "$CHKFILE" ] && retval="checksum file \"${CHKFILE}\"does not exist" && return 1
+    [ ! -e "${infile}" ] && retval="input file \"${infile}\"does not exist" && return 1
+    [ ! -e "${chksumfile}" ] && retval="checksum file \"${chksumfile}\"does not exist" && return 1
 
-    local TMDFILE=$(mktemp -p ${SACRYPT_TEMPD})
-    [ ! -e "$TMDFILE" ] && retval="failed to create temp chk file" && return 1
-    DebugMsg 3 "using \"$TMDFILE\" as temp chk file"
+    local TempChkSumFile=$(mktemp -p ${SACRYPT_TEMPD})
+    [ ! -e "${TempChkSumFile}" ] && retval="failed to create temp chksum file" && return 1
+    DebugMsg 3 "using \"${TempChkSumFile}\" as temp chksum file"
 
-    sacrypt_FileHash "${infile}" > "${TMDFILE}"
-    cmp -s "${CHKFILE}" "${TMDFILE}"; local ec=$?  
+    sacrypt_FileHash "${infile}" > "${TempChkSumFile}"
+    cmp -s "${chksumfile}" "${TempChkSumFile}"; local ec=$?  
     [ ! $ec -eq 0 ] && retval="checksum verification failed ($ec)" && return $ec
 
     return 0
@@ -342,9 +341,9 @@ sacrypt_DecryptFile () {
 
     retval=""
 
-    local DECFILE=$(mktemp -p ${SACRYPT_TEMPD})
-    [ ! -e "$DECFILE" ] && retval="failed to create temp ssh dec file" && return 1
-    DebugMsg 3 "using \"$DECFILE\" as temp ssh dec file"
+    local DecryptedFile=$(mktemp -p ${SACRYPT_TEMPD})
+    [ ! -e "${DecryptedFile}" ] && retval="failed to create temp ssh dec file" && return 1
+    DebugMsg 3 "using \"${DecryptedFile}\" as temp ssh dec file"
 
     # decrypt with header key
     sacrypt_AESDecryptFile ${infile} ${SACRYPT_HEADER_KEY}; local ec=$?  
@@ -352,18 +351,18 @@ sacrypt_DecryptFile () {
     #infile="${retval}" 
 
     # decrypt with agent
-    #cat "${infile}" | ${SACRYPT_DECRYPT_EXE} > "${DECFILE}"; ec=$?  
-    cat "${retval}" | ${SACRYPT_DECRYPT_EXE} > "${DECFILE}"; ec=$?  
+    #cat "${infile}" | ${SACRYPT_DECRYPT_EXE} > "${DecryptedFile}"; ec=$?  
+    cat "${retval}" | ${SACRYPT_DECRYPT_EXE} > "${DecryptedFile}"; ec=$?  
     case $ec in
         0) DebugMsg 1 "ssh decryption successful";;
         1) retval="ssh decryption failed (key not in agent? input not an sae file?)"; return 1;;
         *) retval="ssh decryption gives unknown exit code ($ec)"; return $ec;;
     esac
 
-    [ ! -e "${DECFILE}" ] && retval="ssh decrypted file \"${DECFILE}\" not found" && return 1
+    [ ! -e "${DecryptedFile}" ] && retval="ssh decrypted file \"${DecryptedFile}\" not found" && return 1
 
     # decrypt with password
-    sacrypt_AESDecryptFile ${DECFILE} ${password}; local ec=$?  
+    sacrypt_AESDecryptFile ${DecryptedFile} ${password}; local ec=$?  
     [ ! $ec -eq 0 ] && return $ec
 
     # copy to output
@@ -388,21 +387,17 @@ sacrypt_EncryptFile () {
 
     [ ! -e "${infile}" ] && retval="input file \"${infile}\" not found" && return 1
 
-    local VERFILE=$(mktemp -p ${SACRYPT_TEMPD})
-    [ ! -e "${VERFILE}" ] && retval="failed to create temp ver file" && return 1
-    DebugMsg 3 "using \"${VERFILE}\" as temp ver file"
-
-    local ENCFILE=$(mktemp -p ${SACRYPT_TEMPD})
-    [ ! -e "${ENCFILE}" ] && retval="failed to create temp enc file" && return 1
-    DebugMsg 3 "using \"${ENCFILE}\" as temp enc file"
+    local EncryptedFile=$(mktemp -p ${SACRYPT_TEMPD})
+    [ ! -e "${EncryptedFile}" ] && retval="failed to create temp enc file" && return 1
+    DebugMsg 3 "using \"${EncryptedFile}\" as temp enc file"
 
     sacrypt_FindKeyInAgent ${keyspec}; local ec=$?  
     [ ! $ec -eq 0 ] && return $ec
-    local KEYINDEX=$retval
-    local KEYHASH=$retval1
-    DebugMsg 1 "key ${KEYHASH} found in agent (#${KEYINDEX})"
+    local KeyIndex=$retval
+    local KeyHash=$retval1
+    DebugMsg 1 "key ${KeyHash} found in agent (#${KeyIndex})"
 
-    retval=""; retval1=""
+    retval=""
 
     # encrypt with password
     sacrypt_AESEncryptFile ${infile} ${password}; local ec=$?
@@ -410,42 +405,54 @@ sacrypt_EncryptFile () {
     infile="${retval}" 
 
     # encrypt with all keys in agent
-    cat "${infile}" | ${SACRYPT_ENCRYPT_EXE} > "${ENCFILE}"; ec=$?  
+    cat "${infile}" | ${SACRYPT_ENCRYPT_EXE} > "${EncryptedFile}"; ec=$?  
     [ ! $ec -eq 0 ] && retval="encryption failed ($ec)" && return $ec
 
     # split encrypted file line by line
     local Counter=0
     while IFS='' read -r LinefromFile || [[ -n "${LinefromFile}" ]]; do
         ((Counter++))
-        echo "${LinefromFile}" > "${ENCFILE}.${Counter}"
-    done < "${ENCFILE}"
+        echo "${LinefromFile}" > "${EncryptedFile}.${Counter}"
+    done < "${EncryptedFile}"
+    # select the correct file
+    EncryptedFile="${EncryptedFile}.${KeyIndex}"
+    [ ! -e "${EncryptedFile}" ] && retval="file \"${EncryptedFile}\" not found" && return 1
 
-    # extract the correct file
-    local ANSWER="${ENCFILE}.${KEYINDEX}"
-    [ ! -e "${ANSWER}" ] && retval="file \"${ANSWER}\" not found" && return 1
+#    # extract the correct file
+#    local ANSWER="${EncryptedFile}.${KeyIndex}"
+#    [ ! -e "${ANSWER}" ] && retval="file \"${ANSWER}\" not found" && return 1
 
     # verify encryption
     DebugMsg 3 "verifying encryption"
-    cat "${ANSWER}" | ${SACRYPT_DECRYPT_EXE} > "${VERFILE}"
-    cmp -s "${infile}" "${VERFILE}" ; ec=$?  
+
+    local DecryptedFile=$(mktemp -p ${SACRYPT_TEMPD})
+    [ ! -e "${DecryptedFile}" ] && retval="failed to create temp ver file" && return 1
+    DebugMsg 3 "using \"${DecryptedFile}\" as temp ver file"
+
+#    cat "${ANSWER}" | ${SACRYPT_DECRYPT_EXE} > "${DecryptedFile}"
+    cat "${EncryptedFile}" | ${SACRYPT_DECRYPT_EXE} > "${DecryptedFile}"
+    cmp -s "${infile}" "${DecryptedFile}" ; ec=$?  
     case $ec in
         0) DebugMsg 1 "verification ok";;
 	*) retval="verification failed ($ec)" && return $ec;;
     esac
 
     # encrypt with header key
-    sacrypt_AESEncryptFile ${ANSWER} ${SACRYPT_HEADER_KEY}; local ec=$?  
+    #sacrypt_AESEncryptFile ${ANSWER} ${SACRYPT_HEADER_KEY}; local ec=$?  
+    sacrypt_AESEncryptFile ${EncryptedFile} ${SACRYPT_HEADER_KEY}; local ec=$?  
     [ ! $ec -eq 0 ] && return $ec
+    EncryptedFile="${retval}"
+    [ ! -e "${EncryptedFile}" ] && retval="file \"${EncryptedFile}\" not found" && return 1
 
     # create output
-    cp "${retval}" "${outfile}"
+    cp "${EncryptedFile}" "${outfile}"
     [ ! -e "${outfile}" ] && retval="failed to create output file \"${outfile}\"" && return 1
 
     chmod go-rwx "${outfile}"
 
     DebugMsg 3 "encrypted data written to \"${outfile}\""
 
-    retval=${KEYHASH}
+    retval=${KeyHash}
     return 0
 }
 
@@ -458,15 +465,15 @@ sacrypt_FindKeyInAgent () {
 
     local KeyHashSpec=$1
 
-    local KEYFILE=$(mktemp -p ${SACRYPT_TEMPD})
-    [ ! -e "$KEYFILE" ] && retval="failed to create temp key file" && return 1
-    DebugMsg 3 "using \"$KEYFILE\" as temp key file"
+    local KeyFile=$(mktemp -p ${SACRYPT_TEMPD})
+    [ ! -e "${KeyFile}" ] && retval="failed to create temp key file" && return 1
+    DebugMsg 3 "using \"${KeyFile}\" as temp key file"
 
-    ssh-add -L > ${KEYFILE} 2> /dev/null; local ec=$? 
+    ssh-add -L > ${KeyFile} 2> /dev/null; local ec=$? 
 
-    local NROFKEYS=$(cat ${KEYFILE} | wc -l)
+#    local NrOfKeys=$(cat ${KeyFile} | wc -l)
     case $ec in
-        0) DebugMsg 3 "agent provides ${NROFKEYS} key(s)";;
+	0) DebugMsg 3 "agent provides $(cat ${KeyFile} | wc -l) key(s)";;
         1) retval="ssh-agent has no identities"; return 1;;
         2) retval="ssh-agent is not running"; return 2;;
         *) retval="ssh-agent gives unknown exit code ($ec)"; return $ec;;
@@ -479,26 +486,25 @@ sacrypt_FindKeyInAgent () {
 
         local KeyType=${LinefromFile%% *}
         local RestOfLine=${LinefromFile#* }
-        local PublicKey=${RestOfLine%% *}
-        local PublicKeyHash=$(sacrypt_StringHash $PublicKey)
+        local Key=${RestOfLine%% *}
+        local KeyHash=$(sacrypt_StringHash ${Key})
 
-        DebugMsg 3 "Found $KeyType key (${PublicKeyHash})"
-        if [[ $KeyType = ssh-rsa ]]; then
-            if [[ ${PublicKeyHash} = ${KeyHashSpec}* ]]; then
-		DebugMsg 3 "key ${PublicKeyHash} (${KeyHashSpec}*) found in agent (#$Counter)"
+        DebugMsg 3 "Found ${KeyType} key (${KeyHash})"
+        if [[ ${KeyType} = ssh-rsa ]]; then
+            if [[ ${KeyHash} = ${KeyHashSpec}* ]]; then
+		DebugMsg 3 "key ${KeyHash} (${KeyHashSpec}*) found in agent (#${Counter})"
 	        retval=$Counter	
-	        retval1=${PublicKeyHash}	
+	        retval1=${KeyHash}	
 		# key found
     		return 0
 		break
 	    else
-	        DebugMsg 3 "key #$Counter ($PublicKeyHash) is rejected (not the destination key)" 
+	        DebugMsg 3 "key #${Counter} (${KeyHash}) is rejected (not the destination key)" 
 	    fi
         else 
-	    DebugMsg 2 "key #$Counter ($PublicKeyHash) is ignored (no RSA key)"
+	    DebugMsg 2 "key #${Counter} (${KeyHash}) is ignored (no RSA key)"
         fi
-
-    done < "${KEYFILE}"
+    done < "${KeyFile}"
 
     # key not found
     retval="key ${KeyHashSpec} not found in agent"; return 1

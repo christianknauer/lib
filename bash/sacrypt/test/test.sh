@@ -1,35 +1,107 @@
-#!/usr/bin/env bash
+#!/bin/env bash
 
-# file: test.sh
+export PATH=${PATH}:.
 
-# initialize 
+# -----------------------------------------------------------------
 
-LIB_DIRECTORY="../.."
-LIB_DIRECTORY=$(readlink -f -- "${LIB_DIRECTORY}")
-[ ! -e "${LIB_DIRECTORY}" ] && echo "$0 (sa-crypt lib) ERROR: lib directory \"${LIB_DIRECTORY}\" does not exist" && exit 1
+set -x 
+debug="-d 3 -D 1"
+logfile="-L test.log"
+export LOGGING_TIMESTAMP=echo
+#export CORE_DEBUG=1
+#debug=""
 
-# load options module (use default namespace "Options.")
-source "${LIB_DIRECTORY}/options.sh"
+# -----------------------------------------------------------------
+CreateTestData () {
+    local PREFIX=$1
+    local LEN=$2
+    cat /dev/urandom | tr -dc '[:alnum:]' | head -c $LEN > "${PREFIX}${LEN}.txt"
+}
 
-# handle command options
-USAGE="[-i INFILE -o OUTFILE -k PUBKEYFILE -c CHKFILE -p PASSWORD -I INITFILE -d LOGGING_DEBUG_LEVEL -L LOGGING_LOGFILE  -D CORE_DEBUG]"
-Options.ParseOptions "${USAGE}" ${@}
-# log library errors to app log file
+# -----------------------------------------------------------------
+RunTests () {
+    local LEN=$1
+    local KEYFILE=$2
 
-# load logging module (use global namespace)
-LOGGING_LIB_DIRECTORY="${LIB_DIRECTORY}/logging"
-[ ! -e "${LOGGING_LIB_DIRECTORY}" ] && echo "$0: ERROR: logging lib directory \"${LOGGING_LIB_DIRECTORY}\" does not exist" && exit 1
-LOGGING_NAMESPACE="." source "${LOGGING_LIB_DIRECTORY}/logging.sh"; ec=$?
-[ ! $ec -eq 0 ] &&  echo "$0: ERROR: failed to initialize logging lib" && exit $ec
-DebugLoggingConfig 9
+    local filename="data${LEN}.txt"
 
-CORE_LOGFILE="${LOGGING_LOGFILE}"
+    # no password
+    encrypt.sh ${debug} ${logfile} -i ${filename} -k ${KEYFILE} 
+    decrypt.sh ${debug} ${logfile} -i ${filename}.sae 
+    diff ${filename} ${filename}.sae.dec
 
-# load sacrypt module (use global namespace)
-SACRYPT_LIB_DIRECTORY="${LIB_DIRECTORY}/sacrypt"
-[ ! -e "${SACRYPT_LIB_DIRECTORY}" ] && echo "$0: ERROR: sacrypt lib directory \"${SACRYPT_LIB_DIRECTORY}\" does not exist" && exit 1
-source "${SACRYPT_LIB_DIRECTORY}/sacrypt.sh"; ec=$?
-[ ! $ec -eq 0 ] &&  echo "$0: ERROR: failed to initialize sacrypt lib" && exit $ec
+    # password
+    encrypt.sh ${debug} ${logfile} -i ${filename} -k ${KEYFILE} -p ${passwrd}
+    decrypt.sh ${debug} ${logfile} -i ${filename}.sae -p ${passwrd}
+    diff ${filename} ${filename}.sae.dec
+ 
+    # raw password file
+    encrypt.sh ${debug} ${logfile} -i ${filename} -k ${KEYFILE} -p ${passfile}
+    decrypt.sh ${debug} ${logfile} -i ${filename}.sae -p ${passfile}
+    diff ${filename} ${filename}.sae.dec
+
+    # sae password file
+    encrypt.sh ${debug} ${logfile} -i ${filename} -k ${KEYFILE} -p ${encpassfile}
+    decrypt.sh ${debug} ${logfile} -i ${filename}.sae -p ${encpassfile}
+    diff ${filename} ${filename}.sae.dec
+
+    # sae password file
+    encrypt.sh ${debug} ${logfile} -i ${filename} -k ${KEYFILE} -p ${encpassfile}:
+    decrypt.sh ${debug} ${logfile} -i ${filename}.sae -p ${encpassfile}::${keyssh}
+    diff ${filename} ${filename}.sae.dec
+
+    # sae password file
+    encrypt.sh ${debug} ${logfile} -i ${filename} -k ${KEYFILE} -p $(cat $passfile)
+    decrypt.sh ${debug} ${logfile} -i ${filename}.sae -p ${encpassfilewithpw}::::${passwrd}
+    diff ${filename} ${filename}.sae.dec
+
+}
+
+# -----------------------------------------------------------------
+
+CreateTestData pw   64
+
+CreateTestData data 64
+CreateTestData data 128
+CreateTestData data 256 
+CreateTestData data 1024
+#CreateTestData data 8192
+
+keyssh="key.ssh"
+keyhash="key.sak"
+#keyfile=$keyssh
+passwrd="12345"
+
+passfile="pw64.txt"
+encpassfile="${passfile}.sae"
+encpassfilewithpw="${passfile}-with-pw.sae"
+
+encrypt.sh ${debug} ${logfile} -i ${passfile} -k ${keyssh}
+decrypt.sh ${debug} ${logfile} -i ${encpassfile}
+diff ${passfile} ${encpassfile}.dec
+
+encrypt.sh ${debug} ${logfile} -i ${passfile} -o ${encpassfilewithpw} -k ${keyssh} -p ${passwrd}
+decrypt.sh ${debug} ${logfile} -i ${encpassfilewithpw} -o ${encpassfilewithpw}.dec  -p ${passwrd}
+diff ${passfile} ${encpassfilewithpw}.dec
+
+# -----------------------------------------------------------------
+
+
+# -----------------------------------------------------------------
+
+RunTests 64 $keyssh
+RunTests 64 $keyhash
+
+RunTests 128 $keyssh
+RunTests 128 $keyhash
+
+RunTests 256 $keyssh
+RunTests 256 $keyhash
+
+RunTests 1024 $keyssh
+RunTests 1024 $keyhash
+
+rm -f data*.* ${passfile}*
 
 exit 0
 
