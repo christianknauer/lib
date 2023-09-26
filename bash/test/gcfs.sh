@@ -28,8 +28,8 @@ CORE_LOGFILE="${LOGGING_LOGFILE}"
 
 DebugLoggingConfig 9
 
-__Core_CreateEncryptedTempDir; ec=$?; 
-[ ! $ec -eq 0 ] &&  __Core_LibError "$errval" && exit $ec
+Core_CreateEncryptedTempDir; ec=$?; 
+[ ! $ec -eq 0 ] &&  Core_LibError "$errval" && exit $ec
 
 PlainDir="${retval}"
 CipherDir="${retval1}"
@@ -44,8 +44,8 @@ DebugLs 1 "Plain dir:" "${PlainDir}"
 DebugMsg 1 "Password: ${Password}"
 DebugMsg 1 "Master key: ${MasterKey}"
 
-__Core_CreateEncryptedTempDir; ec=$?; 
-[ ! $ec -eq 0 ] &&  __Core_LibError "$errval" && exit $ec
+Core_CreateEncryptedTempDir; ec=$?; 
+[ ! $ec -eq 0 ] &&  Core_LibError "$errval" && exit $ec
 
 PlainDir="${retval}"
 CipherDir="${retval1}"

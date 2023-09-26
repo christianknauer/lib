@@ -14,6 +14,6 @@ LIB_DIRECTORY=$(pwd)/..
 # main
 
 user="Gregory"
-__Core_RenderTemplate template.txt > expanded_template.txt
+Core_RenderTemplate template.txt > expanded_template.txt
 
 # EOF

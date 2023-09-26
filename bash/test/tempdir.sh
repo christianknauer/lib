@@ -29,11 +29,11 @@ CORE_LOGFILE="${LOGGING_LOGFILE}"
 DebugLoggingConfig 9
 
 # create temporary directory
-__Core_CreateTempDir; ec=$?; TEMPD=$retval
+Core_CreateTempDir; ec=$?; TEMPD=$retval
 [ ! $ec -eq 0 ] &&  ErrorMsg "$errval" && exit $ec
-__Core_CreateTempDir; ec=$?; TEMPD=$retval
+Core_CreateTempDir; ec=$?; TEMPD=$retval
 [ ! $ec -eq 0 ] &&  ErrorMsg "$errval" && exit $ec
-__Core_CreateTempDir; ec=$?; TEMPD=$retval
+Core_CreateTempDir; ec=$?; TEMPD=$retval
 [ ! $ec -eq 0 ] &&  ErrorMsg "$errval" && exit $ec
 
 # EOF

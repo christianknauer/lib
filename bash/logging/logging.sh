@@ -38,12 +38,12 @@ LOGGING_LOGFILE="${LOGGING_LOGFILE:=/dev/null}"
 # load core module (if not already loaded)
 [ -z "${CORE_ISLOADED}" ] && source "${LIB_DIRECTORY}/core.sh"
 # import LibError from lib module as __Logging_LibError
-#eval "__Logging_LibError () { __Core_LibError \"\$@\"; }"
+#eval "__Logging_LibError () { Core_LibError \"\$@\"; }"
 
 # check for repeated initialization
-[ ! -z "${LOGGING_ISLOADED}" ] && __Core_LibError "FATAL: logging module already loaded (namespace ${LOGGING_NAMESPACE})" && exit 1
+[ ! -z "${LOGGING_ISLOADED}" ] && Core_LibError "FATAL: logging module already loaded (namespace ${LOGGING_NAMESPACE})" && exit 1
 # check module directory
-[ ! -e "${LOGGING_LIB_DIRECTORY}" ] && __Core_LibError "FATAL: logging lib directory \"${LOGGING_LIB_DIRECTORY}\" does not exist" && exit 1
+[ ! -e "${LOGGING_LIB_DIRECTORY}" ] && Core_LibError "FATAL: logging lib directory \"${LOGGING_LIB_DIRECTORY}\" does not exist" && exit 1
 
 # load additional library files
 # colors 
@@ -210,7 +210,7 @@ __Logging_MsgCat () {
     eval "echo -e -n \"\$Text\\n\"        $Stream"          
 
     # check if file exists
-    [ ! -f "${file}" ] && __Core_LibError "file \"${file}\" does not exist" && return 0
+    [ ! -f "${file}" ] && Core_LibError "file \"${file}\" does not exist" && return 0
 
     # write to log file
     echo -e -n "$__Logging_ColorInfo" >> "${LOGGING_LOGFILE}" 
@@ -264,11 +264,11 @@ __Logging_DebugLs () {
 
     [ ! -d "${dir}" ] && \
         __Logging_Msg DEBUG ${lvl} "${msg}" && \
-	__Core_LibError "directory \"${dir}\" does not exist" && return 0
+	Core_LibError "directory \"${dir}\" does not exist" && return 0
 
     local tmp_file=$(mktemp)
     [ ! -f "${tmp_file}" ] && \
-	__Core_LibError "cannot create temp file \"${tmp_file}\"" && return 0
+	Core_LibError "cannot create temp file \"${tmp_file}\"" && return 0
 
     ls -laR "${dir}" > "${tmp_file}"
     __Logging_MsgCat DEBUG ${lvl} "${msg}" "${tmp_file}" "${dir}"
