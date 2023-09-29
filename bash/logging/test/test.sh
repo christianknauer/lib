@@ -25,12 +25,12 @@ source subscript.sh
 # functions
 
 # main
-USAGE="[ -I LOGGING_INFO_LEVEL -D LOGGING_DEBUG_LEVEL -L LOGGING_LOGFILE ]"
+USAGE="[ -I LOGGING_INFO_LEVEL -d LOGGING_DEBUG_LEVEL -L LOGGING_LOGFILE -D CORE_DEBUG]"
 Options.ParseOptions "${USAGE}" ${@}
 # log library errors to app log file
 CORE_LOGFILE="${LOGGING_LOGFILE}"
 
-DebugLoggingConfig 9
+__logging_DebugConfig
 
 TestFn4 () {
 	InfoMsg "inside info"
@@ -71,7 +71,7 @@ TestFn4
 InfoMsg 99 "info lvl 99"
 DebugMsg 99 "debug lvl 99"
 
-Core_CheckBinaries cat openssl find; ec=$?; missing=${retval}
+core_CheckBinaries cat openssl find; ec=$?; missing=${retval}
 [ ! $ec -eq 0 ] && ErrorMsg "the following binaries are missing: ${missing}" # && exit 1
 
 exit 0

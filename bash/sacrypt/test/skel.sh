@@ -21,7 +21,7 @@ LOGGING_LIB_DIRECTORY="${LIB_DIRECTORY}/logging"
 [ ! -e "${LOGGING_LIB_DIRECTORY}" ] && echo "$0: ERROR: logging lib directory \"${LOGGING_LIB_DIRECTORY}\" does not exist" && exit 1
 LOGGING_NAMESPACE="." source "${LOGGING_LIB_DIRECTORY}/logging.sh"; ec=$?
 [ ! $ec -eq 0 ] &&  echo "$0: ERROR: failed to initialize logging lib" && exit $ec
-DebugLoggingConfig 9
+__logging_DebugConfig
 
 CORE_LOGFILE="${LOGGING_LOGFILE}"
 

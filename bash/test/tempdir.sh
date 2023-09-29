@@ -26,14 +26,14 @@ Options.ParseOptions "${USAGE}" ${@}
 # log library errors to app log file
 CORE_LOGFILE="${LOGGING_LOGFILE}"
 
-DebugLoggingConfig 9
+__logging_DebugConfig
 
 # create temporary directory
-Core_CreateTempDir; ec=$?; TEMPD=$retval
+core_CreateTempDir; ec=$?; TEMPD=$retval
 [ ! $ec -eq 0 ] &&  ErrorMsg "$errval" && exit $ec
-Core_CreateTempDir; ec=$?; TEMPD=$retval
+core_CreateTempDir; ec=$?; TEMPD=$retval
 [ ! $ec -eq 0 ] &&  ErrorMsg "$errval" && exit $ec
-Core_CreateTempDir; ec=$?; TEMPD=$retval
+core_CreateTempDir; ec=$?; TEMPD=$retval
 [ ! $ec -eq 0 ] &&  ErrorMsg "$errval" && exit $ec
 
 # EOF

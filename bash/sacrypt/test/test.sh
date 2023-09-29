@@ -5,10 +5,11 @@ export PATH=${PATH}:.
 # -----------------------------------------------------------------
 
 set -x 
-debug="-d 3 -D 1"
+debug="-d 1"
 logfile="-L test.log"
 export LOGGING_TIMESTAMP=echo
 #export CORE_DEBUG=1
+export CORE_LOGFILE=/dev/null
 #debug=""
 
 # -----------------------------------------------------------------
@@ -65,7 +66,7 @@ CreateTestData data 64
 CreateTestData data 128
 CreateTestData data 256 
 CreateTestData data 1024
-#CreateTestData data 8192
+CreateTestData data 8192
 
 keyssh="key.ssh"
 keyhash="key.sak"
@@ -100,6 +101,9 @@ RunTests 256 $keyhash
 
 RunTests 1024 $keyssh
 RunTests 1024 $keyhash
+
+RunTests 8192 $keyssh
+RunTests 8192 $keyhash
 
 rm -f data*.* ${passfile}*
 

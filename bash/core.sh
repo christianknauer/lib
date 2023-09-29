@@ -4,7 +4,7 @@
 
 # checks
 
-[ ! -z "${CORE_ISLOADED}" ] && Core_LibError "FATAL: core module already loaded" && exit 1
+[ ! -z "${CORE_ISLOADED}" ] && core_LibError "FATAL: core module already loaded" && exit 1
 
 # options
 
@@ -18,24 +18,24 @@ __CORE_LIST_OF_FUSE_MOUNTS=""
 
 # private functions
 
-__Core_CleanupOnExitP () {
-    __Core_FuseUnmountOnExitP
-    __Core_RemoveTempOnExitP
+__core_CleanupOnExitP () {
+    __core_FuseUnmountOnExitP
+    __core_RemoveTempOnExitP
 }
 
-__Core_FuseUnmountOnExitP () {
-    Core_LibDebug "unmounting ${__CORE_LIST_OF_FUSE_MOUNTS}"
+__core_FuseUnmountOnExitP () {
+    core_LibDebug "unmounting ${__CORE_LIST_OF_FUSE_MOUNTS}"
     eval "${__CORE_LIST_OF_FUSE_MOUNTS}"
 }
 
-__Core_RemoveTempOnExitP () {
-    Core_LibDebug "removing temporary directories ${__CORE_LIST_OF_TEMP_DIRS}"
+__core_RemoveTempOnExitP () {
+    core_LibDebug "removing temporary directories ${__CORE_LIST_OF_TEMP_DIRS}"
     eval "rm -rf ${__CORE_LIST_OF_TEMP_DIRS}"
 }
 
 # public functions
 
-Core_LibDebug () {
+core_LibDebug () {
     local msg=$1; local source=$(basename ${BASH_SOURCE[1]}); local line=${BASH_LINENO[0]}; local func=${FUNCNAME[1]}
 
     local cColorOff='\033[0m'; local cPurple='\033[0;35m'; local cWhite='\033[0;37m' 
@@ -45,7 +45,7 @@ Core_LibDebug () {
     echo -e "${Text}" >&2; echo -e "${Text}" >> "${CORE_LOGFILE}" 
 }
 
-Core_LibError () {
+core_LibError () {
     local msg=$1; local source=$(basename ${BASH_SOURCE[2]}); local line=${BASH_LINENO[1]}; local func=${FUNCNAME[2]}
 
     local cColorOff='\033[0m'; local cBRed='\033[1;31m'; local cWhite='\033[0;37m' 
@@ -62,7 +62,7 @@ Core_LibError () {
 #           [errval] contains a comma separated string of 
 #           arguments that are not found in PATH
 
-Core_CheckBinaries () {
+core_CheckBinaries () {
     errval=""
 
     for app in "$@"
@@ -76,12 +76,12 @@ Core_CheckBinaries () {
     return 0
 }
 
-Core_CreateEncryptedTempDir () {
+core_CreateEncryptedTempDir () {
     local password=$1
 
     [ -z ${password} ] && password=$(cat /dev/urandom | tr -dc '[:alnum:]' | head -c 64)
 
-    Core_CreateTempDir; local ec=$?; local Tempd=$retval
+    core_CreateTempDir; local ec=$?; local Tempd=$retval
     [ ! $ec -eq 0 ] && return $ec
 
     local CipherDir=$(mktemp -d -p ${Tempd})
@@ -105,7 +105,7 @@ Core_CreateEncryptedTempDir () {
 
     # CAVE: it might not be safe to remove the config file!!
     rm -f "${CipherDir}/gocryptfs.conf" 
-    Core_LibDebug "created encrypted temporary directory \"${PlainDir}\""
+    core_LibDebug "created encrypted temporary directory \"${PlainDir}\""
 
     retval="${PlainDir}"
     retval1="${CipherDir}"
@@ -124,7 +124,7 @@ Core_CreateEncryptedTempDir () {
 # returns 1 if the directory could not be created in /tmp
 #           [errval] contains the error message
 
-Core_CreateTempDir () {
+core_CreateTempDir () {
     base=$1
     retval=""; errval=""
 
@@ -141,7 +141,7 @@ Core_CreateTempDir () {
     # make sure the temp directory is in /tmp.
     [[ ! "${Tempd}" = /tmp/* ]] && errval="temporary directory not in /tmp" && return 1
 
-    Core_LibDebug "created temporary directory \"${Tempd}\""
+    core_LibDebug "created temporary directory \"${Tempd}\""
 
     retval="${Tempd}"
     return 0
@@ -153,9 +153,9 @@ Core_CreateTempDir () {
 # Username: ${user}
 #
 # use as follows:
-# user="Gregory"; Core_RenderTemplate /path/to/template.txt > path/to/expanded_file
+# user="Gregory"; core_RenderTemplate /path/to/template.txt > path/to/expanded_file
 
-Core_RenderTemplate() {
+core_RenderTemplate() {
     eval "echo \"$(cat $1)\""
 }
 
@@ -163,7 +163,7 @@ Core_RenderTemplate() {
 
 # make sure the temp directories get removed on script exit
 trap "exit 1" HUP INT PIPE QUIT TERM
-trap "__Core_CleanupOnExitP" EXIT
+trap "__core_CleanupOnExitP" EXIT
  
 CORE_ISLOADED="yes"
 

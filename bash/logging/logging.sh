@@ -11,7 +11,7 @@
 # module configuration
 
 # immutable module options
-LOGGING_NAMESPACE="${LOGGING_NAMESPACE:=_Logging_}"
+LOGGING_NAMESPACE="${LOGGING_NAMESPACE:=_logging_}"
 LOGGING_LIB_DIRECTORY=$(readlink -f -- "${LIB_DIRECTORY}/logging")
 
 # mutable module options
@@ -37,13 +37,13 @@ LOGGING_LOGFILE="${LOGGING_LOGFILE:=/dev/null}"
 [ ! -f "${LIB_DIRECTORY}/core.sh" ] && echo -e "FATAL ERROR logging module ($(basename $0)): core.sh not found in \"${LIB_DIRECTORY}\"" >&2 && exit 1
 # load core module (if not already loaded)
 [ -z "${CORE_ISLOADED}" ] && source "${LIB_DIRECTORY}/core.sh"
-# import LibError from lib module as __Logging_LibError
-#eval "__Logging_LibError () { Core_LibError \"\$@\"; }"
+# import LibError from lib module as __logging_LibError
+#eval "__logging_LibError () { core_LibError \"\$@\"; }"
 
 # check for repeated initialization
-[ ! -z "${LOGGING_ISLOADED}" ] && Core_LibError "FATAL: logging module already loaded (namespace ${LOGGING_NAMESPACE})" && exit 1
+[ ! -z "${LOGGING_ISLOADED}" ] && core_LibError "FATAL: logging module already loaded (namespace ${LOGGING_NAMESPACE})" && exit 1
 # check module directory
-[ ! -e "${LOGGING_LIB_DIRECTORY}" ] && Core_LibError "FATAL: logging lib directory \"${LOGGING_LIB_DIRECTORY}\" does not exist" && exit 1
+[ ! -e "${LOGGING_LIB_DIRECTORY}" ] && core_LibError "FATAL: logging lib directory \"${LOGGING_LIB_DIRECTORY}\" does not exist" && exit 1
 
 # load additional library files
 # colors 
@@ -59,15 +59,15 @@ __LOGGING_LAST_LEVEL=5
 
 # colors
 
-__Logging_ColorOff=$(__Colors_GetColor Color_Off)
-__Logging_ColorError=$(__Colors_GetColor BRed)
-__Logging_ColorWarn=$(__Colors_GetColor Yellow)
-__Logging_ColorInfo=$(__Colors_GetColor Blue)
-__Logging_ColorDebug=$(__Colors_GetColor Purple)
+__logging_ColorOff=$(__Colors_GetColor Color_Off)
+__logging_ColorError=$(__Colors_GetColor BRed)
+__logging_ColorWarn=$(__Colors_GetColor Yellow)
+__logging_ColorInfo=$(__Colors_GetColor Blue)
+__logging_ColorDebug=$(__Colors_GetColor Purple)
 
 # private functions
 
-__Logging_Stream () {
+__logging_Stream () {
     local type=$1
     local retval=""
 
@@ -87,7 +87,7 @@ __Logging_Stream () {
 #    echo ""
 }
 
-__Logging_FormatFunction () {
+__logging_FormatFunction () {
     local type=$1
     local func=$2
     local depth=$3
@@ -110,7 +110,7 @@ __Logging_FormatFunction () {
     echo "${retval}"
 }
 
-__Logging_FormatLevel () {
+__logging_FormatLevel () {
     local type=$1
     local lvl=$2
     local retval=""
@@ -127,22 +127,22 @@ __Logging_FormatLevel () {
     echo "${retval}"
 }
 
-__Logging_TextColor () {
+__logging_TextColor () {
     local type=$1
-    local color=$__Logging_ColorOff
+    local color=$__logging_ColorOff
     if [ "${type}" == "INFO" ]; then
-	color=$__Logging_ColorInfo
+	color=$__logging_ColorInfo
     elif [ "${type}" == "DEBUG" ]; then
-	color=$__Logging_ColorDebug
+	color=$__logging_ColorDebug
     elif [ "${type}" == "WARN" ]; then
-	color=$__Logging_ColorWarn
+	color=$__logging_ColorWarn
     elif [ "${type}" == "ERROR" ]; then
-	color=$__Logging_ColorError
+	color=$__logging_ColorError
     fi
     echo "$color"
 }
 
-__Logging_FormatMsg () {
+__logging_FormatMsg () {
     local type=$1
     local lvl=$2
     local msg=$3
@@ -150,14 +150,14 @@ __Logging_FormatMsg () {
     local cWhite=$(__Colors_GetColor BWhite)
     local cEmptyLine="                                      "
 
-    local Color="$(__Logging_TextColor ${type})"
-    local Level="$(__Logging_FormatLevel ${type} ${lvl})"
+    local Color="$(__logging_TextColor ${type})"
+    local Level="$(__logging_FormatLevel ${type} ${lvl})"
     local Time=$(eval $LOGGING_TIMESTAMP)
     local Type=$(printf '%-5s' "${type}")
     local Depth=${#FUNCNAME[@]}
     local Func=${FUNCNAME[4]}
     #local Func="${cEmptyLine:0:${#FUNCNAME[@]}-5}${FUNCNAME[4]}"
-    Func="$(__Logging_FormatFunction ${type} ${Func} ${Depth})"
+    Func="$(__logging_FormatFunction ${type} ${Func} ${Depth})"
     local Source=$(basename ${BASH_SOURCE[4]})
     local LineNo=${BASH_LINENO[3]}
 
@@ -165,10 +165,10 @@ __Logging_FormatMsg () {
 
     __LOGGING_LAST_LEVEL=$Depth
 
-    retval="[${Color}${Type}${__Logging_ColorOff}${Level}${Time}${cWhite}${Func} (${Source}:${LineNo})${__Logging_ColorOff}] ${msg}" 
+    retval="[${Color}${Type}${__logging_ColorOff}${Level}${Time}${cWhite}${Func} (${Source}:${LineNo})${__logging_ColorOff}] ${msg}" 
 }
 
-__Logging_IsInactive () {
+__logging_IsInactive () {
     local Script=$(basename ${BASH_SOURCE[3]})
     local Function=${FUNCNAME[3]}
 
@@ -177,19 +177,19 @@ __Logging_IsInactive () {
     return 0
 }
 
-__Logging_InsufficientLevel () {
+__logging_InsufficientLevel () {
     local lvl=$1
     local threshold=$2
     (( ${lvl} <= ${threshold} )) && return 1
     return 0
 }
 
-__Logging_Msg () {
+__logging_Msg () {
     local type=$1; local lvl=$2; local msg=$3
 
-    #local Text=$(__Logging_FormatMsg "${type}" ${lvl} "${msg}")
-    __Logging_FormatMsg "${type}" ${lvl} "${msg}"; local Text=${retval}
-    local Stream=$(__Logging_Stream "${type}")
+    #local Text=$(__logging_FormatMsg "${type}" ${lvl} "${msg}")
+    __logging_FormatMsg "${type}" ${lvl} "${msg}"; local Text=${retval}
+    local Stream=$(__logging_Stream "${type}")
     #local Depth=${#FUNCNAME[@]}; ((Depth++))
     #__LOGGING_LAST_LEVEL=$Depth
 
@@ -197,149 +197,143 @@ __Logging_Msg () {
     eval "echo -e \"\$Text\" $Stream"
 }
 
-__Logging_MsgCat () {
+__logging_MsgCat () {
     local type=$1; local lvl=$2; local msg=$3
     local file=$4; local source=$5; [ "${source}" == "" ] && source="${file}"
 
-    local Stream=$(__Logging_Stream "${type}")
-    #local Text=$(__Logging_FormatMsg "${type}" ${lvl} "(content of \"${source}\") ${msg}")
-    __Logging_FormatMsg "${type}" ${lvl} "(content of \"${source}\") ${msg}"; local Text=${retval}
+    local Stream=$(__logging_Stream "${type}")
+    #local Text=$(__logging_FormatMsg "${type}" ${lvl} "(content of \"${source}\") ${msg}")
+    __logging_FormatMsg "${type}" ${lvl} "(content of \"${source}\") ${msg}"; local Text=${retval}
 
     # write to log file & stream
     echo -e -n "${Text}\n"            >> "${LOGGING_LOGFILE}" 
     eval "echo -e -n \"\$Text\\n\"        $Stream"          
 
     # check if file exists
-    [ ! -f "${file}" ] && Core_LibError "file \"${file}\" does not exist" && return 0
+    [ ! -f "${file}" ] && core_LibError "file \"${file}\" does not exist" && return 0
 
     # write to log file
-    echo -e -n "$__Logging_ColorInfo" >> "${LOGGING_LOGFILE}" 
+    echo -e -n "$__logging_ColorInfo" >> "${LOGGING_LOGFILE}" 
     cat "${file}"                     >> "${LOGGING_LOGFILE}" 
-    echo -e -n "$__Logging_ColorOff"  >> "${LOGGING_LOGFILE}" 
+    echo -e -n "$__logging_ColorOff"  >> "${LOGGING_LOGFILE}" 
 
     # write to output stream (stdout/stderr)
-    eval "echo -e -n \"$__Logging_ColorInfo\" $Stream"     
+    eval "echo -e -n \"$__logging_ColorInfo\" $Stream"     
     eval "cat \"${file}\"                     $Stream"                         
-    eval "echo -e -n \"$__Logging_ColorOff\"  $Stream" 
+    eval "echo -e -n \"$__logging_ColorOff\"  $Stream" 
 }
 
 # public functions
 
-eval "${LOGGING_NAMESPACE:1}DebuggingIsActive() { __Logging_DebuggingIsActive \"\$@\"; }"
-__Logging_DebuggingIsActive () {
+eval "${LOGGING_NAMESPACE:1}DebuggingIsActive() { __logging_DebuggingIsActive \"\$@\"; }"
+__logging_DebuggingIsActive () {
     local lvl=$1
 
-    __Logging_IsInactive && return 1
-    __Logging_InsufficientLevel ${lvl} ${LOGGING_DEBUG_LEVEL} && return 1
+    __logging_IsInactive && return 1
+    __logging_InsufficientLevel ${lvl} ${LOGGING_DEBUG_LEVEL} && return 1
     return 0
 }
 
-eval "${LOGGING_NAMESPACE:1}DebugMsg() { __Logging_DebugMsg \"\$@\"; }"
-__Logging_DebugMsg () {
+eval "${LOGGING_NAMESPACE:1}DebugMsg() { __logging_DebugMsg \"\$@\"; }"
+__logging_DebugMsg () {
     local lvl=$1; local msg=$2
 
-    __Logging_IsInactive && return 0
-    __Logging_InsufficientLevel ${lvl} ${LOGGING_DEBUG_LEVEL} && return 0
+    __logging_IsInactive && return 0
+    __logging_InsufficientLevel ${lvl} ${LOGGING_DEBUG_LEVEL} && return 0
 
-    __Logging_Msg DEBUG ${lvl} "${msg}"
+    __logging_Msg DEBUG ${lvl} "${msg}"
 }
 
-eval "${LOGGING_NAMESPACE:1}DebugCat() { __Logging_DebugCat \"\$@\"; }"
-__Logging_DebugCat () {
+eval "${LOGGING_NAMESPACE:1}DebugCat() { __logging_DebugCat \"\$@\"; }"
+__logging_DebugCat () {
     local lvl=$1; local msg=$2; local file=$3; local source=$4
 
-    __Logging_IsInactive && return 0
-    __Logging_InsufficientLevel ${lvl} ${LOGGING_DEBUG_LEVEL} && return 0
+    __logging_IsInactive && return 0
+    __logging_InsufficientLevel ${lvl} ${LOGGING_DEBUG_LEVEL} && return 0
 
-    __Logging_MsgCat DEBUG ${lvl} "${msg}" "${file}" "${source}"
+    __logging_MsgCat DEBUG ${lvl} "${msg}" "${file}" "${source}"
 
 }
 
-eval "${LOGGING_NAMESPACE:1}DebugLs() { __Logging_DebugLs \"\$@\"; }"
-__Logging_DebugLs () {
+eval "${LOGGING_NAMESPACE:1}DebugLs() { __logging_DebugLs \"\$@\"; }"
+__logging_DebugLs () {
     local lvl=$1; local msg=$2; local dir=$3
 
-    __Logging_IsInactive && return 0
-    __Logging_InsufficientLevel ${lvl} ${LOGGING_DEBUG_LEVEL} && return 0
+    __logging_IsInactive && return 0
+    __logging_InsufficientLevel ${lvl} ${LOGGING_DEBUG_LEVEL} && return 0
 
     [ ! -d "${dir}" ] && \
-        __Logging_Msg DEBUG ${lvl} "${msg}" && \
-	Core_LibError "directory \"${dir}\" does not exist" && return 0
+        __logging_Msg DEBUG ${lvl} "${msg}" && \
+	core_LibError "directory \"${dir}\" does not exist" && return 0
 
     local tmp_file=$(mktemp)
     [ ! -f "${tmp_file}" ] && \
-	Core_LibError "cannot create temp file \"${tmp_file}\"" && return 0
+	core_LibError "cannot create temp file \"${tmp_file}\"" && return 0
 
     ls -laR "${dir}" > "${tmp_file}"
-    __Logging_MsgCat DEBUG ${lvl} "${msg}" "${tmp_file}" "${dir}"
+    __logging_MsgCat DEBUG ${lvl} "${msg}" "${tmp_file}" "${dir}"
     rm -f -- "${tmp_file}"
 }
 
-eval "${LOGGING_NAMESPACE:1}DebugLoggingConfig() { __Logging_DebugLoggingConfig \"\$@\"; }"
-__Logging_DebugLoggingConfig () {
-    local lvl=$1
-
-    __Logging_IsInactive && return 0
-    __Logging_InsufficientLevel ${lvl} ${LOGGING_DEBUG_LEVEL} && return 0
-
-    __Logging_Msg DEBUG ${lvl} "LOGGING_NAMESPACE       = $LOGGING_NAMESPACE"
-    __Logging_Msg DEBUG ${lvl} "LOGGING_LIB_DIRECTORY   = ${LOGGING_LIB_DIRECTORY}"
-    __Logging_Msg DEBUG ${lvl} "LOGGING_STYLE           = $LOGGING_STYLE"
-    __Logging_Msg DEBUG ${lvl} "LOGGING_INFO_STD_LEVEL  = $LOGGING_INFO_STD_LEVEL"
-    __Logging_Msg DEBUG ${lvl} "LOGGING_DEBUG_STD_LEVEL = $LOGGING_DEBUG_STD_LEVEL"
-    __Logging_Msg DEBUG ${lvl} "LOGGING_INFO_LEVEL      = $LOGGING_INFO_LEVEL"
-    __Logging_Msg DEBUG ${lvl} "LOGGING_DEBUG_LEVEL     = $LOGGING_DEBUG_LEVEL"
-    __Logging_Msg DEBUG ${lvl} "LOGGING_SCRIPTS         = $LOGGING_SCRIPTS"
-    __Logging_Msg DEBUG ${lvl} "LOGGING_FUNCTIONS       = $LOGGING_FUNCTIONS"
-    __Logging_Msg DEBUG ${lvl} "LOGGING_TIMESTAMP       = $LOGGING_TIMESTAMP"
-    __Logging_Msg DEBUG ${lvl} "LOGGING_LOGFILE         = $LOGGING_LOGFILE"
+__logging_DebugConfig () {
+    core_LibDebug "LOGGING_NAMESPACE       = $LOGGING_NAMESPACE"
+    core_LibDebug "LOGGING_LIB_DIRECTORY   = ${LOGGING_LIB_DIRECTORY}"
+    core_LibDebug "LOGGING_STYLE           = $LOGGING_STYLE"
+    core_LibDebug "LOGGING_INFO_STD_LEVEL  = $LOGGING_INFO_STD_LEVEL"
+    core_LibDebug "LOGGING_DEBUG_STD_LEVEL = $LOGGING_DEBUG_STD_LEVEL"
+    core_LibDebug "LOGGING_INFO_LEVEL      = $LOGGING_INFO_LEVEL"
+    core_LibDebug "LOGGING_DEBUG_LEVEL     = $LOGGING_DEBUG_LEVEL"
+    core_LibDebug "LOGGING_SCRIPTS         = $LOGGING_SCRIPTS"
+    core_LibDebug "LOGGING_FUNCTIONS       = $LOGGING_FUNCTIONS"
+    core_LibDebug "LOGGING_TIMESTAMP       = $LOGGING_TIMESTAMP"
+    core_LibDebug "LOGGING_LOGFILE         = $LOGGING_LOGFILE"
 }
 
 # info
 
-eval "${LOGGING_NAMESPACE:1}InfoMsg() { __Logging_InfoMsg \"\$@\"; }"
-__Logging_InfoMsg () {
+eval "${LOGGING_NAMESPACE:1}InfoMsg() { __logging_InfoMsg \"\$@\"; }"
+__logging_InfoMsg () {
     local nargs=$#; local lvl=${LOGGING_INFO_STD_LEVEL}; local msg=$1
     ((${nargs} == 2)) && lvl=$1 && msg=$2
 
-    __Logging_IsInactive && return 0
-    __Logging_InsufficientLevel ${lvl} ${LOGGING_INFO_LEVEL} && return 0
-    __Logging_Msg INFO ${lvl} "${msg}"
+    __logging_IsInactive && return 0
+    __logging_InsufficientLevel ${lvl} ${LOGGING_INFO_LEVEL} && return 0
+    __logging_Msg INFO ${lvl} "${msg}"
 }
 
-eval "${LOGGING_NAMESPACE:1}InfoCat() { __Logging_InfoCat \"\$@\"; }"
-__Logging_InfoCat () {
+eval "${LOGGING_NAMESPACE:1}InfoCat() { __logging_InfoCat \"\$@\"; }"
+__logging_InfoCat () {
     local nargs=$#; local lvl=${LOGGING_INFO_STD_LEVEL}; local msg=$1; local file=$2
     ((${nargs} == 3)) && lvl=$1 && msg=$2; local file=$2
 
-    __Logging_IsInactive && return 0
-    __Logging_InsufficientLevel ${lvl} ${LOGGING_INFO_LEVEL} && return 0
-    __Logging_MsgCat INFO ${lvl} "${msg}" "${file}"
+    __logging_IsInactive && return 0
+    __logging_InsufficientLevel ${lvl} ${LOGGING_INFO_LEVEL} && return 0
+    __logging_MsgCat INFO ${lvl} "${msg}" "${file}"
 }
 
 # warn
 
-eval "${LOGGING_NAMESPACE:1}WarnMsg() { __Logging_WarnMsg \"\$@\"; }"
-__Logging_WarnMsg () {
+eval "${LOGGING_NAMESPACE:1}WarnMsg() { __logging_WarnMsg \"\$@\"; }"
+__logging_WarnMsg () {
     local msg=$1
 
-    __Logging_Msg WARN 0 "${msg}"
+    __logging_Msg WARN 0 "${msg}"
 }
 
 # error
 
-eval "${LOGGING_NAMESPACE:1}ErrorMsg() { __Logging_ErrorMsg \"\$@\"; }"
-__Logging_ErrorMsg () {
+eval "${LOGGING_NAMESPACE:1}ErrorMsg() { __logging_ErrorMsg \"\$@\"; }"
+__logging_ErrorMsg () {
     local msg=$1
 
-    __Logging_Msg ERROR 0 "${msg}"
+    __logging_Msg ERROR 0 "${msg}"
 }
 
-eval "${LOGGING_NAMESPACE:1}ErrorCat() { __Logging_ErrorCat \"\$@\"; }"
-__Logging_ErrorCat () {
+eval "${LOGGING_NAMESPACE:1}ErrorCat() { __logging_ErrorCat \"\$@\"; }"
+__logging_ErrorCat () {
     local msg=$1; local file=$2
 
-    __Logging_MsgCat ERROR 0 "${msg}" "${file}"
+    __logging_MsgCat ERROR 0 "${msg}" "${file}"
 }
 
 LOGGING_ISLOADED="yes"
