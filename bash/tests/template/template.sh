@@ -1,6 +1,6 @@
 # file: temp.sh
 
-LIB_DIRECTORY=$(pwd)/..
+LIB_DIRECTORY=$(pwd)/../..
 
 # checks
 [ -z "${LIB_DIRECTORY}" ] && echo -e "FATAL ERROR ($(basename $0)): LIB_DIRECTORY is not defined" >&2 && exit 1

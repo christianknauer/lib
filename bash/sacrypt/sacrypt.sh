@@ -3,7 +3,7 @@
 # requirements: 
 
 # check for repeated initialization
-[ ! -z "${SACRYPT_ISLOADED}" ] && core_LibError "FATAL: sacrypt module already loaded (namespace ${SACRYPT_NAMESPACE})" && exit 1
+[ ! -z "${SACRYPT_ISLOADED}" ] && core_FatalExit "sacrypt module already loaded (namespace ${SACRYPT_NAMESPACE})" 1
 
 # module configuration
 
@@ -46,7 +46,7 @@ SACRYPT_HEADER_KEY="${SACRYPT_HEADER_KEY:=JktNcY8VuYDseLDaOKfd7hhMKuCuKsfbX20NLc
 [ -z "${CORE_ISLOADED}" ] && source "${LIB_DIRECTORY}/core.sh"
 
 # check module directory
-[ ! -e "${SACRYPT_LIB_DIRECTORY}" ] && core_LibError "FATAL: sacrypt lib directory \"${SACRYPT_LIB_DIRECTORY}\" does not exist" && exit 1
+[ ! -e "${SACRYPT_LIB_DIRECTORY}" ] && core_FatalExit "sacrypt lib directory \"${SACRYPT_LIB_DIRECTORY}\" does not exist" 1
 
 # load additional library files
 
@@ -60,8 +60,8 @@ SACRYPT_HEADER_KEY="${SACRYPT_HEADER_KEY:=JktNcY8VuYDseLDaOKfd7hhMKuCuKsfbX20NLc
 
 __sacrypt_Requirements () {
     core_CheckBinaries ${SACRYPT_REQUIREMENTS}; ec=$?; local missing=${retval}
-    [ ! $ec -eq 0 ] && core_LibError "the following binaries are missing: ${missing}" && exit 1
-    core_LibDebug "requirements \"${SACRYPT_REQUIREMENTS}\" ok"
+    [ ! $ec -eq 0 ] && core_ErrorMsg "the following binaries are missing: ${missing}" && exit 1
+    core_DebugMsg "requirements \"${SACRYPT_REQUIREMENTS}\" ok"
 }
 
 __sacrypt_CheckBinaries () {
@@ -69,15 +69,15 @@ __sacrypt_CheckBinaries () {
     local CDir="${SACRYPT_LIB_DIRECTORY}/exec/${Arch}"
     SACRYPT_ENCRYPT_EXE="${CDir}/${SACRYPT_ENCRYPT_EXE}"
     SACRYPT_DECRYPT_EXE="${CDir}/${SACRYPT_DECRYPT_EXE}"
-    [ ! -e "${SACRYPT_ENCRYPT_EXE}" ] && core_LibError "exec file \"${SACRYPT_ENCRYPT_EXE}\" not found" && exit 1
-    [ ! -e "${SACRYPT_DECRYPT_EXE}" ] && core_LibError "exec file \"${SACRYPT_DECRYPT_EXE}\" not found" && exit 1
-    core_LibDebug "exec files \"${SACRYPT_ENCRYPT_EXE}\", \"${SACRYPT_DECRYPT_EXE}\" ok"
+    [ ! -e "${SACRYPT_ENCRYPT_EXE}" ] && core_ErrorMsg "exec file \"${SACRYPT_ENCRYPT_EXE}\" not found" && exit 1
+    [ ! -e "${SACRYPT_DECRYPT_EXE}" ] && core_ErrorMsg "exec file \"${SACRYPT_DECRYPT_EXE}\" not found" && exit 1
+    core_DebugMsg "exec files \"${SACRYPT_ENCRYPT_EXE}\", \"${SACRYPT_DECRYPT_EXE}\" ok"
 }
 
 __sacrypt_CreateTempDir () {
     core_CreateEncryptedTempDir; local ec=$?; SACRYPT_TEMPD=$retval
-    [ ! $ec -eq 0 ] &&  core_LibError "${errval}" && exit 1
-    core_LibDebug "created temporary directory \"${SACRYPT_TEMPD}\""
+    [ ! $ec -eq 0 ] &&  core_ErrorMsg "${errval}" && exit 1
+    core_DebugMsg "created temporary directory \"${SACRYPT_TEMPD}\""
 }
 
 # filename.${SACRYPT_ENC_EXT}::KEYSPEC::PASS describes an sa-encrypted

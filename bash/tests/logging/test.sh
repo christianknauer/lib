@@ -8,11 +8,8 @@
 
 LIB_DIRECTORY=$(pwd)/../..
 
-# load logging module (use global namespace)
-LOGGING_LIB_DIRECTORY="${LIB_DIRECTORY}/logging"
-[ ! -e "${LOGGING_LIB_DIRECTORY}" ] && echo "$0: ERROR: logging lib directory \"${LOGGING_LIB_DIRECTORY}\" does not exist" && exit 1
-LOGGING_NAMESPACE="." source "${LOGGING_LIB_DIRECTORY}/logging.sh"; ec=$?
-[ ! $ec -eq 0 ] &&  echo "$0: ERROR: failed to initialize logging lib" && exit $ec
+# load logging module 
+source "${LIB_DIRECTORY}/logging.sh"
 
 LOGGING_TIMESTAMP=echo
 # load options module (use default namespace "Options.")
@@ -60,7 +57,7 @@ InfoMsg 2 "info lvl 2"
 WarnMsg "warn"
 ErrorMsg "error"
 InfoCat "InfoCat data.txt" data.txt
-InfoCat 2 "cat nonexistent" nonexistent
+InfoCat 2 "InfoCat 2 nonexistent" nonexistent
 if $(DebuggingIsActive 2); then
   InfoMsg "debugging is active"
 else
