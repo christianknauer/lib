@@ -126,15 +126,13 @@ __logging_FormatFunction () {
 __logging_FormatLevel () {
     local type=$1
     local lvl=$2
-    local retval="!"
+    local retval=" !!!"
     if [ "${type}" == "INFO" ]; then
 #	retval="-${lvl}/${LOGGING_INFO_LEVEL}"
 	retval=" (${lvl})"
     elif [ "${type}" == "DEBUG" ]; then
 #	retval="-${lvl}/${LOGGING_DEBUG_LEVEL}"
 	retval=" (${lvl})"
-    else
-        echo "${retval}"; return 0
     fi
 #    retval=$(printf ' %7s' "${retval}")
     echo "${retval}"
