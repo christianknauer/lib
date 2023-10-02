@@ -189,9 +189,9 @@ core_CreateEncryptedTempDir () {
     local PlainDir=$(mktemp -d -p ${Tempd})
     [ ! -e "${PlainDir}" ] && errval="failed to create temporary plain directory" && return 1
     
-    gocryptfs -extpass echo -extpass "${password}" -init "${CipherDir}" > /dev/null; ec=$?
+    gocryptfs -extpass echo -extpass "${password}" -init "${CipherDir}" &> /dev/null; ec=$?
     [ ! $ec -eq 0 ] &&  errval="gocryptfs init failed" && return $ec
-    gocryptfs -extpass echo -extpass "${password}" "${CipherDir}" "${PlainDir}" > /dev/null; ec=$?
+    gocryptfs -extpass echo -extpass "${password}" "${CipherDir}" "${PlainDir}" &> /dev/null; ec=$?
     [ ! $ec -eq 0 ] &&  errval="gocryptfs mount failed" && return $ec
 
     __CORE_LIST_OF_FUSE_MOUNTS="${__CORE_LIST_OF_FUSE_MOUNTS}fusermount -u \"${PlainDir}\"; "
