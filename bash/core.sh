@@ -263,11 +263,30 @@ core_RenderTemplate() {
     eval "echo \"$(cat $1)\""
 }
 
+# send a message to a gotify server 
+
+core_GotifyMsg () {
+    local BASEURL=$1
+    local TOKEN=$2
+    local TITLE=$3
+    local MESSAGE=$4
+    local PRIORITY=$5
+
+    [ -z ${PRIORITY} ] && PRIORITY=5
+
+    local URL="${BASEURL}/message?token=${TOKEN}"
+
+    curl -s -S --data '{"message": "'"${MESSAGE}"'", "title": "'"${TITLE}"'", "priority":'"${PRIORITY}"', "extras": {"client::display": {"contentType": "text/markdown"}}}' -H 'Content-Type: application/json' "$URL"
+
+}
+
 # module init code
 
 # make sure the temp directories get removed on script exit
 trap "exit 1" HUP INT PIPE QUIT TERM
 trap "__core_CleanupOnExitP" EXIT
+
+# finish
  
 CORE_ISLOADED="yes"
 
