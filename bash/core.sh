@@ -178,10 +178,13 @@ core_CheckBinaries () {
 
 core_CreateEncryptedTempDir () {
     local password=$1
-
+    local base=$2
+    retval=""; errval=""
+ 
     [ -z ${password} ] && password=$(cat /dev/urandom | tr -dc '[:alnum:]' | head -c 64)
+    [ -z ${base} ]     && base="/tmp"
 
-    core_CreateTempDir; local ec=$?; local Tempd=$retval
+    core_CreateTempDir "${base}"; local ec=$?; local Tempd=$retval
     [ ! $ec -eq 0 ] && return $ec
 
     local CipherDir=$(mktemp -d -p ${Tempd})
@@ -225,7 +228,7 @@ core_CreateEncryptedTempDir () {
 #           [errval] contains the error message
 
 core_CreateTempDir () {
-    base=$1
+    local base=$1
     retval=""; errval=""
 
     [ -z ${base} ] && base="/tmp"

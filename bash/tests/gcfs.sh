@@ -42,7 +42,9 @@ DebugLs 1 "Plain dir:" "${PlainDir}"
 DebugMsg 1 "Password: ${Password}"
 DebugMsg 1 "Master key: ${MasterKey}"
 
-core_CreateEncryptedTempDir; ec=$?; 
+ALTTEMP=$(mktemp -d -p "/tmp")
+
+core_CreateEncryptedTempDir "${ALTTEMP}"; ec=$?; 
 [ ! $ec -eq 0 ] &&  core_ErrorMsg "$errval" && exit $ec
 
 PlainDir="${retval}"
