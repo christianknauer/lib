@@ -1,1 +1,4 @@
+# VARWITHDEFAULT = "${VARWITHDEFAULT:=default value}"
+# user = "${user}"
 Username: ${user}
+Variable: ${VARWITHDEFAULT}

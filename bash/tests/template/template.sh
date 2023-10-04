@@ -13,7 +13,13 @@ LIB_DIRECTORY=$(pwd)/../..
 
 # main
 
-user="Gregory"
+user="First"
 core_RenderTemplate template.txt > expanded_template.txt
+cat expanded_template.txt
+
+user="Second"
+VARWITHDEFAULT="user specified"
+core_RenderTemplate template.txt > expanded_template.txt
+cat expanded_template.txt
 
 # EOF
