@@ -177,8 +177,8 @@ core_CheckBinaries () {
 }
 
 core_CreateEncryptedTempDir () {
-    local password=$1
-    local base=$2
+    local base=$1
+    local password=$2
     retval=""; errval=""
  
     [ -z ${password} ] && password=$(cat /dev/urandom | tr -dc '[:alnum:]' | head -c 64)
