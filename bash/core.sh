@@ -242,7 +242,7 @@ core_CreateTempDir () {
     __CORE_LIST_OF_TEMP_DIRS="${__CORE_LIST_OF_TEMP_DIRS} \"${Tempd}\""
 
     # make sure the temp directory is in /tmp.
-    [[ ! "${Tempd}" = /tmp/* ]] && errval="temporary directory not in /tmp" && return 1
+    #[[ ! "${Tempd}" = /tmp/* ]] && errval="temporary directory not in /tmp" && return 1
 
     core_DebugMsg "created temporary directory \"${Tempd}\""
 
