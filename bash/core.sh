@@ -1,7 +1,5 @@
 # file: core.sh
 
-# requirements: basename, cat
-
 # checks
 
 [ ! -z "${CORE_ISLOADED}" ] && core_FatalExit "core module already loaded" 1
@@ -11,6 +9,11 @@
 CORE_LOGFILE="${CORE_LOGFILE:=lib-bash-core-$(basename $0)-$$.log}"
 CORE_DEBUG="${CORE_DEBUG:=}"
 
+# constants
+
+# requirements
+CORE_REQUIREMENTS="basename cat curl gocryptfs gocryptfs-xray head mktemp tr"
+
 # private variables
 
 __CORE_LIST_OF_TEMP_DIRS=""
@@ -18,9 +21,21 @@ __CORE_LIST_OF_FUSE_MOUNTS=""
 
 # private functions
 
+__core_CheckRequirements () {
+    core_CheckBinaries ${CORE_REQUIREMENTS}; ec=$?; local missing=${retval}
+    [ ! $ec -eq 0 ] && core_ErrorMsg "the following binaries are missing: ${missing}" && exit 1
+    core_DebugMsg "requirements \"${CORE_REQUIREMENTS}\" ok"
+}
+
+
 __core_CleanupOnExitP () {
+    __core_CleanUpOnExitHookP
     __core_FuseUnmountOnExitP
     __core_RemoveTempOnExitP
+}
+
+__core_CleanUpOnExitHookP () {
+    core_DebugMsg "called"
 }
 
 __core_FuseUnmountOnExitP () {
@@ -281,6 +296,9 @@ core_GotifyMsg () {
 }
 
 # module init code
+
+# check for required binaries
+__core_CheckRequirements
 
 # make sure the temp directories get removed on script exit
 trap "exit 1" HUP INT PIPE QUIT TERM
