@@ -20,6 +20,8 @@ __CORE_LIST_OF_FUSE_MOUNTS="${__CORE_LIST_OF_FUSE_MOUNTS:=}"
 
 # private functions
 
+__core_FnExists () { declare -F "$1" > /dev/null; }
+
 __core_CheckRequirements () {
     core_CheckBinaries ${__CORE_REQUIREMENTSc}; ec=$?; local missing=${retval}
     [ ! $ec -eq 0 ] && core_ErrorMsg "the following binaries are missing: ${missing}" && exit 1
@@ -28,14 +30,14 @@ __core_CheckRequirements () {
 
 
 __core_CleanupOnExitP () {
-    __core_CleanUpOnExitHookP
+    __core_FnExists __core_CleanUpOnExitHookP && __core_CleanUpOnExitHookP || core_WarnMsg "no __core_CleanUpOnExitHookP defined"
     __core_FuseUnmountOnExitP
     __core_RemoveTempOnExitP
 }
 
-__core_CleanUpOnExitHookP () {
-    core_DebugMsg "called"
-}
+#__core_CleanUpOnExitHookP () {
+#   core_DebugMsg "called"
+#}
 
 __core_FuseUnmountOnExitP () {
     core_DebugMsg "unmounting ${__CORE_LIST_OF_FUSE_MOUNTS}"
