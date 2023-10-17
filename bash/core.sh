@@ -25,7 +25,7 @@ __core_FnExists () { declare -F "$1" > /dev/null; }
 __core_CheckRequirements () {
     core_CheckBinaries ${__CORE_REQUIREMENTSc}; ec=$?; local missing=${retval}
     [ ! $ec -eq 0 ] && core_ErrorMsg "the following binaries are missing: ${missing}" && exit 1
-    core_DebugMsg "requirements \"${__CORE_REQUIREMENTS}\" ok"
+    core_DebugMsg "requirements \"${__CORE_REQUIREMENTSc}\" ok"
 }
 
 
