@@ -292,7 +292,9 @@ core_GotifyMsg () {
 
     local URL="${BASEURL}/message?token=${TOKEN}"
 
-    curl -s -S --data '{"message": "'"${MESSAGE}"'", "title": "'"${TITLE}"'", "priority":'"${PRIORITY}"', "extras": {"client::display": {"contentType": "text/markdown"}}}' -H 'Content-Type: application/json' "$URL"
+    curl -s -S --data '{"message": "'"${MESSAGE}"'", "title": "'"${TITLE}"'", "priority":'"${PRIORITY}"', "extras": {"client::display": {"contentType": "text/markdown"}}}' -H 'Content-Type: application/json' "$URL" &> /dev/null
+    local ec=$?
+    [ ! $ec -eq 0 ] && core_WarnMsg "curl failed ($ec)" && return $ec
 
 }
 
