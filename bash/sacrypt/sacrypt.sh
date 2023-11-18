@@ -13,6 +13,8 @@ SACRYPT_LIB_DIRECTORY=$(readlink -f -- "${LIB_DIRECTORY}/sacrypt")
 
 # encrypted temp dir
 SACRYPT_TEMPD=""
+# set this to yes to use unencrypted tmp dir (
+#SACRYPT_UNSAFE_TEMPD="yes"
 
 # requirements
 SACRYPT_REQUIREMENTS="openssl gzip gunzip"
@@ -75,8 +77,14 @@ __sacrypt_CheckBinaries () {
 }
 
 __sacrypt_CreateTempDir () {
-    core_CreateEncryptedTempDir; local ec=$?; SACRYPT_TEMPD=$retval
-    [ ! $ec -eq 0 ] &&  core_ErrorMsg "${errval}" && exit 1
+    if [ -z "${SACRYPT_UNSAFE_TEMPD}" ]; then
+        core_CreateEncryptedTempDir; local ec=$?; SACRYPT_TEMPD=$retval
+        [ ! $ec -eq 0 ] &&  core_ErrorMsg "${errval}" && exit 1
+    else
+        core_CreateTempDir; local ec=$?; SACRYPT_TEMPD=$retval
+        [ ! $ec -eq 0 ] &&  core_ErrorMsg "${errval}" && exit 1
+        core_WarnMsg "temporary directory not encrypted"
+    fi
     core_DebugMsg "created temporary directory \"${SACRYPT_TEMPD}\""
 }
 
