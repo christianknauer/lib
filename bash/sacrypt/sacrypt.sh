@@ -111,7 +111,7 @@ __sacrypt_ParseSAEFileSpec () {
 
     retval=""; retval1=""; retval2=""
 
-    if [[ "${filespec}" =~ ^([^:]*${SACRYPT_ENC_EXT})(::)?([^:]*)(::)?([^:]*).*$ ]]; then
+    if [[ "${filespec}" =~ ^([^:]*\.${SACRYPT_ENC_EXT})(::)?([^:]*)(::)?([^:]*).*$ ]]; then
         FileName="${BASH_REMATCH[1]}"
         KeySpec="${BASH_REMATCH[3]}"
         Password="${BASH_REMATCH[5]}"
