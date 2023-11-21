@@ -4,6 +4,9 @@
 
 # initialize 
 
+# application specific exit code (define to silence warn message)
+__core_CleanUpOnExitHookP () { : }
+
 LIB_DIRECTORY="../.."
 LIB_DIRECTORY=$(readlink -f -- "${LIB_DIRECTORY}")
 [ ! -e "${LIB_DIRECTORY}" ] && echo -e "FATAL ERROR ($(basename $0)): LIB_DIRECTORY \"${LIB_DIRECTORY}\" not found" >&2 && exit 1

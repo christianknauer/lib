@@ -175,20 +175,20 @@ core_FatalExit () {
 #
 # returns 0 if all arguments are found in PATH
 # returns 1 else
-#           [errval] contains a comma separated string of 
+#           [retval] contains a comma separated string of 
 #           arguments that are not found in PATH
 
 core_CheckBinaries () {
-    errval=""
+    retval=""
 
     for app in "$@"
     do
         if ! hash ${app} 2>/dev/null; then
-            errval="${errval},${app}"
+            retval="${retval},${app}"
         fi
     done
-    errval=${errval:1}
-    [ ! -z ${errval} ] && return 1
+    retval=${retval:1}
+    [ ! -z ${retval} ] && return 1
     return 0
 }
 
