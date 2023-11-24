@@ -5,7 +5,9 @@
 # initialize 
 
 # application specific exit code (define to silence warn message)
-__core_CleanUpOnExitHookP () { : }
+__core_CleanUpOnExitHookP () { 
+	: 
+}
 
 LIB_DIRECTORY="../.."
 LIB_DIRECTORY=$(readlink -f -- "${LIB_DIRECTORY}")
