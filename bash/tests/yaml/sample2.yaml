@@ -1,0 +1,18 @@
+version: "3"
+
+services:
+  skeleton:
+    extends:
+      file: project.yml
+      service: base
+    ports:
+      # sftp   - "10024:24"
+      - "${CONFIG_SFTP_PORT_HOST}:${CONFIG_SFTP_PORT_CONTAINER}"
+      # unlock - "10023:23"
+      - "${CONFIG_UNLOCK_PORT_HOST}:${CONFIG_UNLOCK_PORT_CONTAINER}"
+      # tunnel - "10022:22"
+      - "${CONFIG_TUNNEL_PORT_HOST}:${CONFIG_TUNNEL_PORT_CONTAINER}"
+      # remote access port for reverse tunnel (used for remote unlock)
+      - "20023:20023"
+      # CAVE: tunnel connects this (via netcat) to localhost:19023
+      # localhost:19023 can be remote forwarded

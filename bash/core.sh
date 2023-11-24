@@ -28,7 +28,6 @@ __core_CheckRequirements () {
     core_DebugMsg "requirements \"${__CORE_REQUIREMENTSc}\" ok"
 }
 
-
 __core_CleanupOnExitP () {
     __core_FnExists __core_CleanUpOnExitHookP && __core_CleanUpOnExitHookP || core_WarnMsg "no __core_CleanUpOnExitHookP defined"
     __core_FuseUnmountOnExitP
@@ -141,6 +140,11 @@ __core_FmtMsg () {
     local Text="[${col}${tag}${cColorOff}${cWhite} ${Func} (${Source}:${Line})${cColorOff}] ${msg}"
 
     echo -e "${Text}" >&2; echo -e "${Text}" >> "${CORE_LOGFILE}" 
+}
+
+__core_CleanupAfterDeployment () {
+    core_WarnMsg "cleaning up file tree after deployment"
+    rm -rf "${LIB_DIRECTORY}/tests"
 }
 
 # public functions

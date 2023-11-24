@@ -60,6 +60,22 @@ SACRYPT_HEADER_KEY="${SACRYPT_HEADER_KEY:=JktNcY8VuYDseLDaOKfd7hhMKuCuKsfbX20NLc
 
 # private functions
 
+__sacrypt_CleanupAfterDeployment () {
+    core_WarnMsg "cleaning up file tree after deployment"
+
+    local Arch=$(uname -m)
+    core_WarnMsg "stripping binaries (${Arch})" 
+    strip ${LIB_DIRECTORY}/sacrypt/exec/${Arch}/* 
+
+    local OtherArchs="$(find ${LIB_DIRECTORY}/sacrypt/exec -type d ! -name ${Arch} ! -name exec -exec basename '{}' \;)"
+    for a in ${OtherArchs}; do
+	core_WarnMsg "removing binaries ($a)"
+        rm -rf "${LIB_DIRECTORY}/sacrypt/exec/$a"
+    done
+    core_WarnMsg "removing unused dirs"
+    rm -rf "${LIB_DIRECTORY}/sacrypt/tests"
+}
+
 __sacrypt_Requirements () {
     core_CheckBinaries ${SACRYPT_REQUIREMENTS}; ec=$?; local missing=${retval}
     [ ! $ec -eq 0 ] && core_ErrorMsg "the following binaries are missing: ${missing}" && exit 1
