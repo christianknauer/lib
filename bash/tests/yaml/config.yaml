@@ -1,0 +1,20 @@
+containers:
+  skeleton:
+    config:
+      gotify:
+        url: gotify.christianknauer.net
+        apikey: SUPERSECRETAPIKEY
+    services:
+      sftp:
+        ports:
+          host: 10024
+          container: 24
+        tunnel:
+          hostname: frp.christianknauer.net
+          ports:
+            gateway: 19023
+      tunnel:
+        ports:
+          host: 10022
+          container: 22
+          gateway: 19023
