@@ -2,12 +2,16 @@
 
 # file: yaml.sh
 
-# always run this, even when sourced
-# CAVE: this breaks ble.sh completion
-#(return 0 2>/dev/null) && $(pwd)/$(basename $BASH_SOURCE) "$@" ; (return 0 2>/dev/null) && return
+# always execute,§even when sourced
+(return 0 2>/dev/null) && IWasSourced=1 || IWasSourced=0
+if [ ${IWasSourced} -eq 1 ]; then
+  # this script is meant to be executed
+  $(pwd)/$(basename $BASH_SOURCE) "$@"; ec=$? 
+  return $ec
+fi
 
 # define bash lib dir
-LIB_DIRECTORY=$(pwd)/../..
+[ -z "${LIB_DIRECTORY}" ] && LIB_DIRECTORY=$(pwd)/../..
 LIB_DIRECTORY=$(readlink -f -- "${LIB_DIRECTORY}")
 [ ! -e "${LIB_DIRECTORY}" ] && echo -e "FATAL ERROR ($(basename $0)): LIB_DIRECTORY \"${LIB_DIRECTORY}\" not found" >&2 && exit 1
 
@@ -80,11 +84,11 @@ source ${LIB_DIRECTORY}/yaml.sh
 
 InfoMsg 1 "reading config from \"${InputFileName}\""
 
-ParseYamlToShellCode ${InputFileName} | \
+ParseYamlToShellCode ${InputFileName} "config_" | \
     while read i; do
 	left=${i%=*}
 	right=${i#*=}
-	# this filters internal entries (trailing _)
+	# this filters internal entries (identified by a trailing _)
 	[[ ! ${left} =~ _$ ]] && echo "export ${left^^}=$right"
     done
 
