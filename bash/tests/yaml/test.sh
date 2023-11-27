@@ -2,16 +2,17 @@
 
 # file: yaml.sh
 
+# always run this, even when sourced
+# CAVE: this breaks ble.sh completion
+#(return 0 2>/dev/null) && $(pwd)/$(basename $BASH_SOURCE) "$@" ; (return 0 2>/dev/null) && return
+
+# define bash lib dir
 LIB_DIRECTORY=$(pwd)/../..
 LIB_DIRECTORY=$(readlink -f -- "${LIB_DIRECTORY}")
-
-# application specific exit code (define to silence warn message)
-__core_CleanUpOnExitHookP () { : ; }
-
 [ ! -e "${LIB_DIRECTORY}" ] && echo -e "FATAL ERROR ($(basename $0)): LIB_DIRECTORY \"${LIB_DIRECTORY}\" not found" >&2 && exit 1
 
-YAML_NAMESPACE="."
-source ${LIB_DIRECTORY}/yaml.sh
+# application specific exit code (silence warn message)
+__core_CleanUpOnExitHookP () { : ; }
 
 # ---------------------------------------------------------
 __Usage () {
@@ -31,7 +32,6 @@ __Usage () {
     exit 0
 }
 
-InputFileName=
 __ParseOptions () {
     local AllArgs=$@
 
@@ -59,14 +59,21 @@ __ParseOptions () {
 }
 
 # ---------------------------------------------------------
-[ -z "${1}" ]     && __Usage && exit 0
+# parse command options
+InputFileName=
+#[ -z "${1}" ]     && __Usage && exit 0
 __ParseOptions $@ || __Usage 
 
+# ---------------------------------------------------------
+# load logging module 
 # log library errors to app log file
 export CORE_LOGFILE="${LOGGING_LOGFILE:-/dev/null}"
-# load logging module 
 [ -z "${LOGGING_ISLOADED}" ] && source "${LIB_DIRECTORY}/logging.sh"
 __logging_DebugConfig
+
+# load yaml module
+YAML_NAMESPACE="."
+source ${LIB_DIRECTORY}/yaml.sh
 
 # ---------------------------------------------------------
 [ ! -f "${InputFileName}" ] && ErrorMsg "cannot open input file \"${InputFileName}\"" && exit 1
